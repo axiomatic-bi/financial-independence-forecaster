@@ -7,6 +7,7 @@ export interface ForecastInputs {
   isaAssets: number;
   isaRate: number;
   nonIsaAssets: number;
+  nonIsaCostBasis?: number;
   nonIsaRate: number;
   forecastYears: number;
   homeValue: number;
@@ -48,6 +49,9 @@ export interface ForecastResult {
   months: number;
   withdrawal_39_annual: number;
   final_isa: number;
+  final_non_isa: number;
+  final_non_isa_cost_basis: number;
+  non_isa_cost_basis_values: number[];
   years_until_expenses_covered: number | null;
   final_monthly_expenses: number;
   final_annual_expenses: number;

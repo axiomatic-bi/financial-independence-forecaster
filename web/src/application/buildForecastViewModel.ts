@@ -3,6 +3,8 @@ import { UK_BASELINE_DEFAULTS } from '../domain/ukBaseline';
 import type { ForecastInputs, ForecastResult, ForecastViewModel, TableRow } from '../types/forecast';
 
 const TIMEPOINTS_YEARS = [0, 1, 5, 10, 20];
+const UK_CGT_ANNUAL_EXEMPT_AMOUNT = 3000;
+const UK_CGT_BASIC_RATE = 0.18;
 
 const finiteOrZero = (value: number): number => (Number.isFinite(value) ? value : 0);
 
@@ -44,6 +46,16 @@ const yearEndIndices = (dates: string[]): number[] => {
 };
 
 const sample = (values: number[], indices: number[]): number[] => indices.map((i) => values[i]);
+const calculateNonIsaNetWithdrawal = (nonIsaValue: number, nonIsaCostBasis: number, extractionRatePercent: number): number => {
+  if (nonIsaValue <= 0 || extractionRatePercent <= 0) return 0;
+  const grossWithdrawal = nonIsaValue * (extractionRatePercent / 100);
+  const unrealizedGain = Math.max(0, nonIsaValue - Math.max(0, nonIsaCostBasis));
+  const gainRatio = nonIsaValue > 0 ? unrealizedGain / nonIsaValue : 0;
+  const gainsRealized = grossWithdrawal * gainRatio;
+  const taxableGains = Math.max(0, gainsRealized - UK_CGT_ANNUAL_EXEMPT_AMOUNT);
+  const cgtDue = taxableGains * UK_CGT_BASIC_RATE;
+  return Math.max(0, grossWithdrawal - cgtDue);
+};
 
 const buildFinanceRows = (result: ForecastResult): TableRow[] => {
   const maxMonth = result.income_values.length - 1;
@@ -132,10 +144,10 @@ export const buildForecastViewModel = (rawInputs: ForecastInputs): ForecastViewM
   const fiNonIsa = safeValue(result.non_isa_values, fiIndex);
   const fiIncome = safeValue(result.income_values, fiIndex);
   const fiSavings = safeValue(result.monthly_savings_values, fiIndex);
-  const fiNonIsaTaxFree = Math.min(fiNonIsa, 3000);
-  const fiNonIsaTaxed = Math.max(0, fiNonIsa - 3000);
+  const fiNonIsaCostBasis = safeValue(result.non_isa_cost_basis_values, fiIndex);
   const extractionRate = result.extraction_rate / 100;
-  const fiWithdrawalAnnual = fiIsa * extractionRate + fiNonIsaTaxFree * extractionRate + fiNonIsaTaxed * extractionRate * 0.76;
+  const fiWithdrawalAnnual =
+    fiIsa * extractionRate + calculateNonIsaNetWithdrawal(fiNonIsa, fiNonIsaCostBasis, result.extraction_rate);
   const fiSavingsRate = fiIncome > 0 ? (fiSavings / fiIncome) * 100 : 0;
   const yearsText = result.years_until_expenses_covered === null ? 'Never' : `${result.years_until_expenses_covered.toFixed(1)}`;
 
@@ -156,7 +168,12 @@ export const buildForecastViewModel = (rawInputs: ForecastInputs): ForecastViewM
   const withdrawalSeries = [
     {
       name: `${extractionRateLabel(result.extraction_rate)} Annual Withdrawal`,
-      values: sample(extendedIsa.values.map((v) => v * extractionRate), indices),
+      values: indices.map((index) => {
+        const isaValue = extendedIsa.values[index] ?? 0;
+        const nonIsaValue = extendedNonIsa.values[index] ?? 0;
+        const nonIsaCostBasis = safeValue(result.non_isa_cost_basis_values, index);
+        return isaValue * extractionRate + calculateNonIsaNetWithdrawal(nonIsaValue, nonIsaCostBasis, result.extraction_rate);
+      }),
     },
     { name: 'Annual Expenses (Inflation-Adjusted)', values: sample(extendedExpenses.values.map((v) => v * 12), indices) },
   ];

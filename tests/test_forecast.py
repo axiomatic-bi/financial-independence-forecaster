@@ -72,8 +72,42 @@ def test_calculate_forecast_applies_sipp_relief_to_pot_not_cashflow():
 
     # Cashflow only deducts net SIPP contribution.
     assert result["monthly_savings"] == pytest.approx(2900.0)
-    # Pension pot receives SIPP contribution uplifted by selected tax relief.
-    assert result["pension_values"][-1] == pytest.approx(10120.0)
+    # Relief-at-source: 100 net contribution is topped up to 125 gross in the pension pot.
+    assert result["pension_values"][-1] == pytest.approx(10125.0)
+
+
+def test_calculate_forecast_fi_includes_mortgage_until_repaid():
+    result = calculate_forecast(
+        income=0,
+        expenses=1000,
+        isa_assets=400000,
+        isa_rate=0,
+        non_isa_assets=0,
+        non_isa_rate=0,
+        months=12,
+        mortgage_balance=240000,
+        mortgage_term=40,
+        mortgage_interest_rate=1.0,
+        pension_interest_rate=0,
+    )
+    assert result["years_until_expenses_covered"] is None
+
+
+def test_calculate_forecast_non_isa_withdrawal_uses_cgt_on_realized_gains_with_zero_other_income():
+    result = calculate_forecast(
+        income=0,
+        expenses=0,
+        isa_assets=0,
+        isa_rate=0,
+        non_isa_assets=300000,
+        non_isa_rate=0,
+        non_isa_cost_basis=100000,
+        months=0,
+        pension_interest_rate=0,
+    )
+    # 3.9% gross withdrawal = 11700. Gain ratio = 2/3 -> gains realized = 7800.
+    # Taxable gains = 7800 - 3000 = 4800, CGT at 18% = 864, net withdrawal = 10836.
+    assert result["withdrawal_39_annual"] == pytest.approx(10836.0)
 
 
 def test_calculate_forecast_does_not_double_deduct_workplace_pension_from_net_income():

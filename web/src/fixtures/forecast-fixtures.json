@@ -3313,7 +3313,7 @@
           "final_wealth": 4836145.95,
           "final_pension": 615419.07,
           "total_gain": 4786145.95,
-          "withdrawal_39_annual": 147370.6,
+          "withdrawal_39_annual": 160664.57,
           "final_isa": 2376087.25,
           "final_monthly_expenses": 5071.81,
           "final_annual_expenses": 60861.75,
@@ -3321,9 +3321,9 @@
           "final_mortgage_balance": 0,
           "final_home_equity": 0,
           "monthly_mortgage_payment": 0,
-          "years_until_expenses_covered": 16.9167,
-          "fi_date": "2043-03",
-          "fi_month_index": 203,
+          "years_until_expenses_covered": 15.5,
+          "fi_date": "2041-10",
+          "fi_month_index": 186,
           "fi_evaluation_end_month": 480
         }
       }
@@ -7173,7 +7173,7 @@
           "final_wealth": 16467572.72,
           "final_pension": 2614217.74,
           "total_gain": 16397572.72,
-          "withdrawal_39_annual": 450081.95,
+          "withdrawal_39_annual": 510048.78,
           "final_isa": 4213721.09,
           "final_monthly_expenses": 4399.76,
           "final_annual_expenses": 52797.08,
@@ -7181,9 +7181,9 @@
           "final_mortgage_balance": 0,
           "final_home_equity": 0,
           "monthly_mortgage_payment": 0,
-          "years_until_expenses_covered": 7.3333,
-          "fi_date": "2033-08",
-          "fi_month_index": 88,
+          "years_until_expenses_covered": 6.25,
+          "fi_date": "2032-07",
+          "fi_month_index": 75,
           "fi_evaluation_end_month": 480
         }
       }
@@ -9953,7 +9953,7 @@
           "final_wealth": 4046090.44,
           "final_pension": 465910.94,
           "total_gain": 4026090.44,
-          "withdrawal_39_annual": 95502.2,
+          "withdrawal_39_annual": 106693.21,
           "final_isa": 1362686.99,
           "final_monthly_expenses": 5168.85,
           "final_annual_expenses": 62026.16,
@@ -9961,9 +9961,9 @@
           "final_mortgage_balance": 0.0,
           "final_home_equity": 1243147.07,
           "monthly_mortgage_payment": 1661.96,
-          "years_until_expenses_covered": 18.25,
-          "fi_date": "2044-07",
-          "fi_month_index": 219,
+          "years_until_expenses_covered": 21.0833,
+          "fi_date": "2047-05",
+          "fi_month_index": 253,
           "fi_evaluation_end_month": 480
         }
       }
@@ -13273,7 +13273,7 @@
           "final_wealth": 5586914.61,
           "final_pension": 1973270.64,
           "total_gain": 5559914.61,
-          "withdrawal_39_annual": 124359.41,
+          "withdrawal_39_annual": 137490.97,
           "final_isa": 1840056.12,
           "final_monthly_expenses": 4709.54,
           "final_annual_expenses": 56514.48,
@@ -13281,9 +13281,9 @@
           "final_mortgage_balance": 0,
           "final_home_equity": 0,
           "monthly_mortgage_payment": 0,
-          "years_until_expenses_covered": 16.6667,
-          "fi_date": "2042-12",
-          "fi_month_index": 200,
+          "years_until_expenses_covered": 15.25,
+          "fi_date": "2041-07",
+          "fi_month_index": 183,
           "fi_evaluation_end_month": 480
         }
       }

@@ -101,7 +101,7 @@ describe('calculateForecast', () => {
     });
 
     expect(result.monthly_savings).toBeCloseTo(2900, 5);
-    expect(result.pension_values[result.pension_values.length - 1]).toBeCloseTo(10120, 5);
+    expect(result.pension_values[result.pension_values.length - 1]).toBeCloseTo(10125, 5);
   });
 
   it('does not double-deduct workplace pension from net-income cashflow', () => {
@@ -131,5 +131,39 @@ describe('calculateForecast', () => {
 
     expect(result.monthly_savings).toBeCloseTo(3000, 5);
     expect(result.pension_values[result.pension_values.length - 1]).toBeCloseTo(10400, 5);
+  });
+
+  it('includes mortgage repayments in FI affordability until mortgage is repaid', () => {
+    const result = calculateForecast({
+      income: 0,
+      expenses: 1000,
+      isaAssets: 400000,
+      isaRate: 0,
+      nonIsaAssets: 0,
+      nonIsaRate: 0,
+      months: 12,
+      mortgageBalance: 240000,
+      mortgageTerm: 40,
+      mortgageInterestRate: 1,
+      pensionInterestRate: 0,
+    });
+
+    expect(result.years_until_expenses_covered).toBeNull();
+  });
+
+  it('applies CGT only to realized gains for non-ISA withdrawals (zero other income assumption)', () => {
+    const result = calculateForecast({
+      income: 0,
+      expenses: 0,
+      isaAssets: 0,
+      isaRate: 0,
+      nonIsaAssets: 300000,
+      nonIsaCostBasis: 100000,
+      nonIsaRate: 0,
+      months: 0,
+      pensionInterestRate: 0,
+    });
+
+    expect(result.withdrawal_39_annual).toBeCloseTo(10836, 5);
   });
 });

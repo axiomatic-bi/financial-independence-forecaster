@@ -3,6 +3,8 @@
 from datetime import datetime
 
 FI_EVALUATION_MONTHS = 40 * 12
+UK_CGT_ANNUAL_EXEMPT_AMOUNT = 3000
+UK_CGT_BASIC_RATE = 0.18
 
 
 def _add_months(base_date: datetime, months: int) -> datetime:
@@ -21,6 +23,33 @@ def calculate_monthly_pension(
         pension_amount = pension_contribution or pension_rate
         return base_income * (pension_amount / 100)
     return pension_contribution
+
+
+def calculate_relief_at_source_gross_contribution(net_contribution: float) -> float:
+    """Convert a net SIPP contribution to gross under UK relief-at-source."""
+    if net_contribution <= 0:
+        return 0
+    return net_contribution / 0.8
+
+
+def calculate_non_isa_net_withdrawal(
+    non_isa_value: float,
+    non_isa_cost_basis: float,
+    extraction_rate_percent: float,
+    cgt_annual_exempt_amount: float = UK_CGT_ANNUAL_EXEMPT_AMOUNT,
+    cgt_rate: float = UK_CGT_BASIC_RATE,
+) -> float:
+    """Estimate net annual non-ISA withdrawal after UK CGT, assuming zero other income."""
+    if non_isa_value <= 0 or extraction_rate_percent <= 0:
+        return 0
+
+    gross_withdrawal = non_isa_value * (extraction_rate_percent / 100)
+    unrealized_gain = max(0, non_isa_value - max(0, non_isa_cost_basis))
+    gain_ratio = (unrealized_gain / non_isa_value) if non_isa_value > 0 else 0
+    gains_realized = gross_withdrawal * gain_ratio
+    taxable_gains = max(0, gains_realized - cgt_annual_exempt_amount)
+    cgt_due = taxable_gains * cgt_rate
+    return max(0, gross_withdrawal - cgt_due)
 
 
 def calculate_mortgage_payment(balance: float, annual_rate: float, years_remaining: float) -> float:
@@ -48,6 +77,7 @@ def simulate_month(
     current_income: float,
     current_pensionable_income: float,
     current_expenses: float,
+    current_non_isa_cost_basis: float,
     isa_rate: float,
     non_isa_rate: float,
     pension_interest_rate: float,
@@ -82,8 +112,8 @@ def simulate_month(
     current_monthly_employer_pension = current_pensionable_income * (employer_pension_contribution_rate / 100)
     current_monthly_sipp_gross = current_monthly_sipp_net
 
-    if pension_tax_relief_rate and current_monthly_sipp_net > 0:
-        current_monthly_sipp_gross = current_monthly_sipp_net * (1 + pension_tax_relief_rate / 100)
+    if current_monthly_sipp_net > 0:
+        current_monthly_sipp_gross = calculate_relief_at_source_gross_contribution(current_monthly_sipp_net)
 
     current_monthly_personal_pension = current_monthly_workplace_pension + current_monthly_sipp_net
     # Net-pay model: take-home income already excludes workplace employee pension deductions.
@@ -102,6 +132,7 @@ def simulate_month(
             current_isa += isa_contribution
             current_non_isa += non_isa_contribution
             isa_annual_used += isa_contribution
+            current_non_isa_cost_basis += non_isa_contribution
 
         current_pension += (
             current_monthly_workplace_pension
@@ -116,6 +147,7 @@ def simulate_month(
         "income": current_income,
         "pensionable_income": current_pensionable_income,
         "expenses": current_expenses,
+        "non_isa_cost_basis": current_non_isa_cost_basis,
         "savings": current_monthly_savings,
         "monthly_personal_pension": current_monthly_personal_pension,
         "isa_annual_used": isa_annual_used,
@@ -130,6 +162,7 @@ def calculate_forecast(
     non_isa_assets: float,
     non_isa_rate: float,
     months: int,
+    non_isa_cost_basis: float | None = None,
     home_value: float = 0,
     mortgage_balance: float = 0,
     mortgage_term: float = 0,
@@ -157,6 +190,7 @@ def calculate_forecast(
     isa_rate = (isa_rate or 0) / 100
     non_isa_assets = non_isa_assets or 0
     non_isa_rate = (non_isa_rate or 0) / 100
+    non_isa_cost_basis = non_isa_assets if non_isa_cost_basis is None else max(0, non_isa_cost_basis)
     pension_interest_rate = (pension_interest_rate or 0) / 100
     pension_assets = pension_assets or 0
     pension_contribution = pension_contribution or 0
@@ -196,9 +230,11 @@ def calculate_forecast(
     home_equity_values = []
     income_values = []
     mortgage_payment_values = []
+    non_isa_cost_basis_values = []
 
     current_isa = isa_assets
     current_non_isa = non_isa_assets
+    current_non_isa_cost_basis = non_isa_cost_basis
     current_pension = pension_assets
     current_income = income
     current_pensionable_income = pensionable_monthly_pay
@@ -227,6 +263,7 @@ def calculate_forecast(
             current_income=current_income,
             current_pensionable_income=current_pensionable_income,
             current_expenses=current_expenses,
+            current_non_isa_cost_basis=current_non_isa_cost_basis,
             isa_rate=isa_rate,
             non_isa_rate=non_isa_rate,
             pension_interest_rate=pension_interest_rate,
@@ -250,6 +287,7 @@ def calculate_forecast(
         current_income = month_result["income"]
         current_pensionable_income = month_result["pensionable_income"]
         current_expenses = month_result["expenses"]
+        current_non_isa_cost_basis = month_result["non_isa_cost_basis"]
         isa_annual_used = month_result["isa_annual_used"]
 
         if month > 0 and date.month == 1:
@@ -275,6 +313,7 @@ def calculate_forecast(
             mortgage_balance_values.append(current_mortgage_balance)
             home_equity_values.append(current_home_equity)
             mortgage_payment_values.append(current_mortgage_payment)
+            non_isa_cost_basis_values.append(current_non_isa_cost_basis)
 
             total_wealth_with_equity = (
                 current_isa + current_non_isa + current_pension + current_home_equity
@@ -282,12 +321,12 @@ def calculate_forecast(
             total_wealth.append(total_wealth_with_equity)
 
         if years_until_covered is None:
-            annual_withdrawal = (
-                (current_isa * 0.039)
-                + (min(current_non_isa, 3000) * 0.039)
-                + (max(0, current_non_isa - 3000) * 0.039 * 0.76)
+            annual_withdrawal = (current_isa * 0.039) + calculate_non_isa_net_withdrawal(
+                current_non_isa,
+                current_non_isa_cost_basis,
+                extraction_rate_percent=3.9,
             )
-            month_annual_expenses = current_expenses * 12
+            month_annual_expenses = (current_expenses + current_mortgage_payment) * 12
             if annual_withdrawal >= month_annual_expenses:
                 years_until_covered = month / 12
                 fi_date = date.strftime("%Y-%m")
@@ -299,12 +338,11 @@ def calculate_forecast(
 
     final_isa = isa_values[-1] if isa_values else 0
     final_non_isa = non_isa_values[-1] if non_isa_values else 0
-    final_non_isa_tax_free = min(final_non_isa, 3000)
-    final_non_isa_taxed = max(0, final_non_isa - 3000)
-    withdrawal_39_annual = (
-        (final_isa * 0.039)
-        + (final_non_isa_tax_free * 0.039)
-        + (final_non_isa_taxed * 0.039 * 0.76)
+    final_non_isa_cost_basis = non_isa_cost_basis_values[-1] if non_isa_cost_basis_values else non_isa_cost_basis
+    withdrawal_39_annual = (final_isa * 0.039) + calculate_non_isa_net_withdrawal(
+        final_non_isa,
+        final_non_isa_cost_basis,
+        extraction_rate_percent=3.9,
     )
 
     final_monthly_expenses = expense_values[-1] if expense_values else expenses
@@ -330,6 +368,9 @@ def calculate_forecast(
         "months": months,
         "withdrawal_39_annual": withdrawal_39_annual,
         "final_isa": final_isa,
+        "final_non_isa": final_non_isa,
+        "final_non_isa_cost_basis": final_non_isa_cost_basis,
+        "non_isa_cost_basis_values": non_isa_cost_basis_values,
         "years_until_expenses_covered": years_until_covered,
         "final_monthly_expenses": final_monthly_expenses,
         "final_annual_expenses": final_annual_expenses,

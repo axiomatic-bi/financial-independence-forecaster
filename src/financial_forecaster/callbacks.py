@@ -6,7 +6,7 @@ from financial_forecaster.components.charts import (
     build_summary_stats,
     build_withdrawal_chart,
 )
-from financial_forecaster.forecast import calculate_forecast
+from financial_forecaster.forecast import calculate_forecast, calculate_non_isa_net_withdrawal
 
 
 def register_callbacks(app):
@@ -147,12 +147,11 @@ def register_callbacks(app):
         fi_non_isa = forecast_data["non_isa_values"][fi_month_index]
         fi_income = forecast_data["income_values"][fi_month_index]
         fi_savings = forecast_data["monthly_savings_values"][fi_month_index]
-        fi_non_isa_tax_free = min(fi_non_isa, 3000)
-        fi_non_isa_taxed = max(0, fi_non_isa - 3000)
-        fi_withdrawal_39_annual = (
-            (fi_isa * 0.039)
-            + (fi_non_isa_tax_free * 0.039)
-            + (fi_non_isa_taxed * 0.039 * 0.76)
+        fi_non_isa_cost_basis = forecast_data["non_isa_cost_basis_values"][fi_month_index]
+        fi_withdrawal_39_annual = (fi_isa * 0.039) + calculate_non_isa_net_withdrawal(
+            fi_non_isa,
+            fi_non_isa_cost_basis,
+            extraction_rate_percent=3.9,
         )
         fi_savings_rate = (fi_savings / fi_income * 100) if fi_income > 0 else 0
 

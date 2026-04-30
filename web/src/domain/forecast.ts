@@ -2,11 +2,36 @@ import type { ForecastResult, PensionType } from '../types/forecast';
 
 const FI_EVALUATION_MONTHS = 40 * 12;
 const DEFAULT_EXTRACTION_RATE = 3.9;
+const UK_CGT_ANNUAL_EXEMPT_AMOUNT = 3000;
+const UK_CGT_BASIC_RATE = 0.18;
 
 const orZero = (value: number | null | undefined): number => value ?? 0;
-const calculateAnnualWithdrawal = (isa: number, nonIsa: number, extractionRatePercent: number): number => {
-  const extractionRate = extractionRatePercent / 100;
-  return isa * extractionRate + Math.min(nonIsa, 3000) * extractionRate + Math.max(0, nonIsa - 3000) * extractionRate * 0.76;
+
+const calculateReliefAtSourceGrossContribution = (netContribution: number): number => {
+  if (netContribution <= 0) {
+    return 0;
+  }
+  return netContribution / 0.8;
+};
+
+const calculateNonIsaNetWithdrawal = (
+  nonIsaValue: number,
+  nonIsaCostBasis: number,
+  extractionRatePercent: number,
+  cgtAnnualExemptAmount: number = UK_CGT_ANNUAL_EXEMPT_AMOUNT,
+  cgtRate: number = UK_CGT_BASIC_RATE,
+): number => {
+  if (nonIsaValue <= 0 || extractionRatePercent <= 0) {
+    return 0;
+  }
+
+  const grossWithdrawal = nonIsaValue * (extractionRatePercent / 100);
+  const unrealizedGain = Math.max(0, nonIsaValue - Math.max(0, nonIsaCostBasis));
+  const gainRatio = nonIsaValue > 0 ? unrealizedGain / nonIsaValue : 0;
+  const gainsRealized = grossWithdrawal * gainRatio;
+  const taxableGains = Math.max(0, gainsRealized - cgtAnnualExemptAmount);
+  const cgtDue = taxableGains * cgtRate;
+  return Math.max(0, grossWithdrawal - cgtDue);
 };
 
 const addMonths = (baseDate: Date, months: number): Date => {
@@ -63,6 +88,7 @@ interface SimulateMonthArgs {
   currentIncome: number;
   currentPensionableIncome: number;
   currentExpenses: number;
+  currentNonIsaCostBasis: number;
   isaRate: number;
   nonIsaRate: number;
   pensionInterestRate: number;
@@ -87,6 +113,7 @@ interface MonthResult {
   income: number;
   pensionable_income: number;
   expenses: number;
+  non_isa_cost_basis: number;
   savings: number;
   isa_annual_used: number;
   monthly_personal_pension: number;
@@ -102,6 +129,7 @@ const simulateMonth = (args: SimulateMonthArgs): MonthResult => {
     currentIncome,
     currentPensionableIncome,
     currentExpenses,
+    currentNonIsaCostBasis,
     isaRate,
     nonIsaRate,
     pensionInterestRate,
@@ -118,6 +146,7 @@ const simulateMonth = (args: SimulateMonthArgs): MonthResult => {
     sippRate,
     pensionTaxReliefRate,
   } = args;
+  void pensionTaxReliefRate;
 
   if (month > 0 && date.getUTCMonth() + 1 === 1) {
     currentExpenses = currentExpenses * (1 + inflationRate / 100);
@@ -137,8 +166,8 @@ const simulateMonth = (args: SimulateMonthArgs): MonthResult => {
   const currentMonthlySippNet = calculateMonthlyPension(currentPensionableIncome, sippType, sippContribution, sippRate);
   const currentMonthlyEmployerPension = currentPensionableIncome * (employerPensionContributionRate / 100);
   let currentMonthlySippGross = currentMonthlySippNet;
-  if (pensionTaxReliefRate && currentMonthlySippNet > 0) {
-    currentMonthlySippGross *= 1 + pensionTaxReliefRate / 100;
+  if (currentMonthlySippNet > 0) {
+    currentMonthlySippGross = calculateReliefAtSourceGrossContribution(currentMonthlySippNet);
   }
   const currentMonthlyPersonalPension = currentMonthlyWorkplacePension + currentMonthlySippNet;
 
@@ -155,6 +184,7 @@ const simulateMonth = (args: SimulateMonthArgs): MonthResult => {
       currentIsa += isaContribution;
       currentNonIsa += nonIsaContribution;
       isaAnnualUsed += isaContribution;
+      currentNonIsaCostBasis += nonIsaContribution;
     }
     currentPension += currentMonthlyWorkplacePension + currentMonthlySippGross + currentMonthlyEmployerPension;
   }
@@ -166,6 +196,7 @@ const simulateMonth = (args: SimulateMonthArgs): MonthResult => {
     income: currentIncome,
     pensionable_income: currentPensionableIncome,
     expenses: currentExpenses,
+    non_isa_cost_basis: currentNonIsaCostBasis,
     savings: currentMonthlySavings,
     isa_annual_used: isaAnnualUsed,
     monthly_personal_pension: currentMonthlyPersonalPension,
@@ -180,6 +211,7 @@ export const calculateForecast = (input: {
   nonIsaAssets: number;
   nonIsaRate: number;
   months: number;
+  nonIsaCostBasis?: number;
   homeValue?: number;
   mortgageBalance?: number;
   mortgageTerm?: number;
@@ -206,6 +238,7 @@ export const calculateForecast = (input: {
   const isaAssets = orZero(input.isaAssets);
   const isaRate = orZero(input.isaRate) / 100;
   const nonIsaAssets = orZero(input.nonIsaAssets);
+  const nonIsaCostBasis = input.nonIsaCostBasis == null ? nonIsaAssets : Math.max(0, orZero(input.nonIsaCostBasis));
   const nonIsaRate = orZero(input.nonIsaRate) / 100;
   const months = input.months;
   let homeValue = orZero(input.homeValue);
@@ -257,6 +290,7 @@ export const calculateForecast = (input: {
   const homeEquityValues: number[] = [];
   const incomeValues: number[] = [];
   const mortgagePaymentValues: number[] = [];
+  const nonIsaCostBasisValues: number[] = [];
 
   let currentIsa = isaAssets;
   let currentNonIsa = nonIsaAssets;
@@ -264,6 +298,7 @@ export const calculateForecast = (input: {
   let currentIncome = income;
   let currentPensionableIncome = pensionableMonthlyPay;
   let currentExpenses = expenses;
+  let currentNonIsaCostBasis = nonIsaCostBasis;
   let isaAnnualUsed = 0;
   let currentMortgageBalance = mortgageBalance;
   let currentHomeEquity = Math.max(0, homeValue - currentMortgageBalance);
@@ -288,6 +323,7 @@ export const calculateForecast = (input: {
       currentIncome,
       currentPensionableIncome,
       currentExpenses,
+      currentNonIsaCostBasis,
       isaRate,
       nonIsaRate,
       pensionInterestRate,
@@ -310,6 +346,7 @@ export const calculateForecast = (input: {
     currentIncome = monthResult.income;
     currentPensionableIncome = monthResult.pensionable_income;
     currentExpenses = monthResult.expenses;
+    currentNonIsaCostBasis = monthResult.non_isa_cost_basis;
     isaAnnualUsed = monthResult.isa_annual_used;
 
     if (month > 0 && date.getUTCMonth() + 1 === 1) {
@@ -335,12 +372,15 @@ export const calculateForecast = (input: {
       mortgageBalanceValues.push(currentMortgageBalance);
       homeEquityValues.push(currentHomeEquity);
       mortgagePaymentValues.push(currentMortgagePayment);
+      nonIsaCostBasisValues.push(currentNonIsaCostBasis);
       totalWealth.push(currentIsa + currentNonIsa + currentPension + currentHomeEquity);
     }
 
     if (yearsUntilCovered === null) {
-      const annualWithdrawal = calculateAnnualWithdrawal(currentIsa, currentNonIsa, extractionRate);
-      const annualExpenses = currentExpenses * 12;
+      const annualWithdrawal =
+        currentIsa * (extractionRate / 100) +
+        calculateNonIsaNetWithdrawal(currentNonIsa, currentNonIsaCostBasis, extractionRate);
+      const annualExpenses = (currentExpenses + currentMortgagePayment) * 12;
       if (annualWithdrawal >= annualExpenses) {
         yearsUntilCovered = month / 12;
         fiDate = toIsoMonth(date);
@@ -354,7 +394,12 @@ export const calculateForecast = (input: {
   const totalGain = finalWealth - (isaAssets + nonIsaAssets);
   const finalIsa = isaValues.length ? isaValues[isaValues.length - 1] : 0;
   const finalNonIsa = nonIsaValues.length ? nonIsaValues[nonIsaValues.length - 1] : 0;
-  const withdrawal39Annual = calculateAnnualWithdrawal(finalIsa, finalNonIsa, extractionRate);
+  const finalNonIsaCostBasis = nonIsaCostBasisValues.length
+    ? nonIsaCostBasisValues[nonIsaCostBasisValues.length - 1]
+    : nonIsaCostBasis;
+  const withdrawal39Annual =
+    finalIsa * (extractionRate / 100) +
+    calculateNonIsaNetWithdrawal(finalNonIsa, finalNonIsaCostBasis, extractionRate);
   const finalMonthlyExpenses = expenseValues.length ? expenseValues[expenseValues.length - 1] : expenses;
   const finalAnnualExpenses = finalMonthlyExpenses * 12;
 
@@ -379,6 +424,9 @@ export const calculateForecast = (input: {
     months,
     withdrawal_39_annual: withdrawal39Annual,
     final_isa: finalIsa,
+    final_non_isa: finalNonIsa,
+    final_non_isa_cost_basis: finalNonIsaCostBasis,
+    non_isa_cost_basis_values: nonIsaCostBasisValues,
     years_until_expenses_covered: yearsUntilCovered,
     final_monthly_expenses: finalMonthlyExpenses,
     final_annual_expenses: finalAnnualExpenses,
