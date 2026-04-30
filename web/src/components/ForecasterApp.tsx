@@ -24,6 +24,12 @@ const themeDataColor = (token: string, fallback: string): string => {
 };
 
 const metricColumns = ['Current', '1Y', '5Y', '10Y', '20Y', 'FI'];
+const chartDescriptions = {
+  assetBreakdown:
+    'Stacked areas show how ISA, non-ISA, pension, and home equity contribute to your overall net worth path.',
+  passiveIncome:
+    'This compares projected annual withdrawal capacity against annual inflation-adjusted expenses to highlight your FI crossover.',
+} as const;
 
 const incomeFields: { key: keyof ForecastInputs; label: string; step?: number }[] = [
   { key: 'income', label: 'Monthly Income (After Tax, After Workplace Pension) (£)' },
@@ -230,6 +236,37 @@ export const ForecasterApp = () => {
     withdrawal: vm.withdrawalSeries[0]?.values[i] ?? 0,
     expenses: vm.withdrawalSeries[1]?.values[i] ?? 0,
   }));
+  const latestAssetSnapshot = assetChartData[assetChartData.length - 1] ?? {
+    year: 'N/A',
+    isa: 0,
+    nonIsa: 0,
+    pension: 0,
+    homeEquity: 0,
+  };
+  const firstAssetSnapshot = assetChartData[0] ?? latestAssetSnapshot;
+  const latestAssetTotal =
+    latestAssetSnapshot.isa + latestAssetSnapshot.nonIsa + latestAssetSnapshot.pension + latestAssetSnapshot.homeEquity;
+  const firstAssetTotal = firstAssetSnapshot.isa + firstAssetSnapshot.nonIsa + firstAssetSnapshot.pension + firstAssetSnapshot.homeEquity;
+  const assetGrowthMultiple = firstAssetTotal > 0 ? latestAssetTotal / firstAssetTotal : null;
+  const leadingAsset = [
+    { label: 'ISA', value: latestAssetSnapshot.isa },
+    { label: 'Non-ISA', value: latestAssetSnapshot.nonIsa },
+    { label: 'Pension', value: latestAssetSnapshot.pension },
+    { label: 'Home Equity', value: latestAssetSnapshot.homeEquity },
+  ].reduce((largest, current) => (current.value > largest.value ? current : largest), {
+    label: 'ISA',
+    value: latestAssetSnapshot.isa,
+  });
+
+  const latestIncomeSnapshot = withdrawalChartData[withdrawalChartData.length - 1] ?? {
+    year: 'N/A',
+    withdrawal: 0,
+    expenses: 0,
+  };
+  const latestCoverageGap = latestIncomeSnapshot.withdrawal - latestIncomeSnapshot.expenses;
+  const latestCoverageRatio = latestIncomeSnapshot.expenses > 0 ? latestIncomeSnapshot.withdrawal / latestIncomeSnapshot.expenses : 0;
+  const crossoverPoint = withdrawalChartData.find((point) => point.withdrawal >= point.expenses);
+  const crossoverYear = crossoverPoint?.year ?? 'Not reached in forecast window';
   const formatCurrencyTick = (value: number) => formatCompactCurrency(value);
   const inputId = (key: keyof ForecastInputs) => `input-${key}`;
   const renderInputLabel = (key: keyof ForecastInputs, label: string) => (
@@ -500,85 +537,118 @@ export const ForecasterApp = () => {
             </div>
           </div>
 
-          <div className="charts">
-            <article className="plot-card">
-              <h3>Asset Breakdown Over Time</h3>
-              <div className="chart-wrap">
-                <ResponsiveContainer width="100%" height={360}>
-                  <AreaChart data={assetChartData} margin={{ top: 16, right: 8, left: 12, bottom: 8 }}>
-                    <CartesianGrid stroke="#32466d" strokeDasharray="3 3" />
-                    <XAxis dataKey="year" stroke="#c0ccec" />
-                    <YAxis stroke="#c0ccec" tickFormatter={formatCurrencyTick} />
-                    <Tooltip content={renderAssetTooltip} />
-                    <Legend />
-                    <Area type="monotone" dataKey="isa" stackId="1" stroke={dataColors.isa} fill={dataColors.isa} name="ISA Assets" />
-                    <Area
-                      type="monotone"
-                      dataKey="nonIsa"
-                      stackId="1"
-                      stroke={dataColors.nonIsa}
-                      fill={dataColors.nonIsa}
-                      name="Non-ISA Assets"
-                    />
-                    <Area
-                      type="monotone"
-                      dataKey="pension"
-                      stackId="1"
-                      stroke={dataColors.pension}
-                      fill={dataColors.pension}
-                      name="Pension"
-                    />
-                    <Area
-                      type="monotone"
-                      dataKey="homeEquity"
-                      stackId="1"
-                      stroke={dataColors.homeEquity}
-                      fill={dataColors.homeEquity}
-                      name="Home Equity"
-                    />
-                  </AreaChart>
-                </ResponsiveContainer>
+          <div className="charts-flow">
+            <section className="narrative-chart">
+              <h3 className="narrative-chart-title">Asset Breakdown Over Time</h3>
+              <div className="narrative-copy">
+                <p>{chartDescriptions.assetBreakdown}</p>
+                <ul className="chart-takeaways">
+                  <li>
+                    <strong>Projected total assets ({latestAssetSnapshot.year}):</strong> {formatCompactCurrency(latestAssetTotal)}
+                  </li>
+                  <li>
+                    <strong>Largest component at end of forecast:</strong> {leadingAsset.label} ({formatCompactCurrency(leadingAsset.value)})
+                  </li>
+                  <li>
+                    <strong>Growth from first to final year:</strong>{' '}
+                    {assetGrowthMultiple ? `${assetGrowthMultiple.toFixed(1)}x` : 'N/A (starting assets are £0)'}
+                  </li>
+                </ul>
               </div>
-            </article>
+              <article className="plot-card">
+                <div className="chart-wrap">
+                  <ResponsiveContainer width="100%" height={360}>
+                    <AreaChart data={assetChartData} margin={{ top: 16, right: 8, left: 12, bottom: 8 }}>
+                      <CartesianGrid stroke="#32466d" strokeDasharray="3 3" />
+                      <XAxis dataKey="year" stroke="#c0ccec" />
+                      <YAxis stroke="#c0ccec" tickFormatter={formatCurrencyTick} />
+                      <Tooltip content={renderAssetTooltip} />
+                      <Legend />
+                      <Area type="monotone" dataKey="isa" stackId="1" stroke={dataColors.isa} fill={dataColors.isa} name="ISA Assets" />
+                      <Area
+                        type="monotone"
+                        dataKey="nonIsa"
+                        stackId="1"
+                        stroke={dataColors.nonIsa}
+                        fill={dataColors.nonIsa}
+                        name="Non-ISA Assets"
+                      />
+                      <Area
+                        type="monotone"
+                        dataKey="pension"
+                        stackId="1"
+                        stroke={dataColors.pension}
+                        fill={dataColors.pension}
+                        name="Pension"
+                      />
+                      <Area
+                        type="monotone"
+                        dataKey="homeEquity"
+                        stackId="1"
+                        stroke={dataColors.homeEquity}
+                        fill={dataColors.homeEquity}
+                        name="Home Equity"
+                      />
+                    </AreaChart>
+                  </ResponsiveContainer>
+                </div>
+              </article>
+            </section>
 
-            <article className="plot-card">
-              <h3>Potential Passive Income vs Projected Expenses</h3>
-              <div className="chart-wrap">
-                <ResponsiveContainer width="100%" height={360}>
-                  <LineChart data={withdrawalChartData} margin={{ top: 16, right: 8, left: 12, bottom: 8 }}>
-                    <CartesianGrid stroke="#32466d" strokeDasharray="3 3" />
-                    <XAxis dataKey="year" stroke="#c0ccec" />
-                    <YAxis stroke="#c0ccec" tickFormatter={formatCurrencyTick} />
-                    <Tooltip
-                      formatter={(value) => formatCompactCurrency(Number(value ?? 0))}
-                      contentStyle={{ backgroundColor: '#0d162a', border: '1px solid #32466d', borderRadius: 10 }}
-                      itemStyle={{ color: '#f0f4ff' }}
-                      labelStyle={{ color: '#c0ccec' }}
-                    />
-                    <Legend />
-                    <Line
-                      type="monotone"
-                      dataKey="withdrawal"
-                      stroke={dataColors.withdrawal}
-                      strokeWidth={2}
-                      dot={false}
-                      activeDot={false}
-                      name={vm.withdrawalSeries[0]?.name ?? 'Annual Withdrawal'}
-                    />
-                    <Line
-                      type="monotone"
-                      dataKey="expenses"
-                      stroke={dataColors.expenses}
-                      strokeWidth={2}
-                      strokeDasharray="6 4"
-                      dot={false}
-                      activeDot={false}
-                      name="Annual Expenses (Inflation-Adjusted)"
-                    />
-                  </LineChart>
-                </ResponsiveContainer>
+            <section className="narrative-chart">
+              <h3 className="narrative-chart-title">Potential Passive Income vs Projected Expenses</h3>
+              <div className="narrative-copy">
+                <p>{chartDescriptions.passiveIncome}</p>
+                <ul className="chart-takeaways">
+                  <li>
+                    <strong>Expected FI crossover year:</strong> {crossoverYear}
+                  </li>
+                  <li>
+                    <strong>Coverage ratio in {latestIncomeSnapshot.year}:</strong> {latestCoverageRatio.toFixed(2)}x
+                  </li>
+                  <li>
+                    <strong>Withdrawal minus expenses in {latestIncomeSnapshot.year}:</strong> {formatCompactCurrency(latestCoverageGap)}
+                  </li>
+                </ul>
               </div>
-            </article>
+              <article className="plot-card">
+                <div className="chart-wrap">
+                  <ResponsiveContainer width="100%" height={360}>
+                    <LineChart data={withdrawalChartData} margin={{ top: 16, right: 8, left: 12, bottom: 8 }}>
+                      <CartesianGrid stroke="#32466d" strokeDasharray="3 3" />
+                      <XAxis dataKey="year" stroke="#c0ccec" />
+                      <YAxis stroke="#c0ccec" tickFormatter={formatCurrencyTick} />
+                      <Tooltip
+                        formatter={(value) => formatCompactCurrency(Number(value ?? 0))}
+                        contentStyle={{ backgroundColor: '#0d162a', border: '1px solid #32466d', borderRadius: 10 }}
+                        itemStyle={{ color: '#f0f4ff' }}
+                        labelStyle={{ color: '#c0ccec' }}
+                      />
+                      <Legend />
+                      <Line
+                        type="monotone"
+                        dataKey="withdrawal"
+                        stroke={dataColors.withdrawal}
+                        strokeWidth={2}
+                        dot={false}
+                        activeDot={false}
+                        name={vm.withdrawalSeries[0]?.name ?? 'Annual Withdrawal'}
+                      />
+                      <Line
+                        type="monotone"
+                        dataKey="expenses"
+                        stroke={dataColors.expenses}
+                        strokeWidth={2}
+                        strokeDasharray="6 4"
+                        dot={false}
+                        activeDot={false}
+                        name="Annual Expenses (Inflation-Adjusted)"
+                      />
+                    </LineChart>
+                  </ResponsiveContainer>
+                </div>
+              </article>
+            </section>
           </div>
 
           <div className="tables">

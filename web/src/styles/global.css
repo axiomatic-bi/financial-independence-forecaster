@@ -313,16 +313,57 @@ body {
   opacity: 1;
   visibility: visible;
 }
-.charts {
+.charts-flow {
   width: 100%;
   max-width: var(--content-max-width);
   margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+.narrative-chart {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(360px, 1fr));
+  grid-template-columns: minmax(260px, 360px) 1fr;
   gap: var(--space-3);
+  align-items: stretch;
+}
+.narrative-chart + .narrative-chart {
+  margin-top: clamp(88px, 12vh, 160px);
+  padding-top: clamp(24px, 3vh, 40px);
+  border-top: 1px solid color-mix(in srgb, var(--border) 72%, transparent);
+}
+.narrative-chart:nth-child(even) .narrative-copy {
+  grid-column: 2;
+}
+.narrative-chart:nth-child(even) .plot-card {
+  grid-column: 1;
+}
+.narrative-chart-title {
+  grid-column: 1 / -1;
+  margin: 0;
+}
+.narrative-copy {
+  padding: var(--space-1) 0;
+}
+.narrative-copy p {
+  margin: 0 0 var(--space-2);
+  color: var(--text-secondary);
+  font-size: 0.9rem;
+  line-height: 1.45;
+}
+.chart-takeaways {
+  margin: 0;
+  padding-left: 1rem;
+  display: grid;
+  gap: 6px;
+  color: var(--text-secondary);
+  font-size: 0.84rem;
+  line-height: 1.4;
+}
+.chart-takeaways strong {
+  color: var(--text-primary);
 }
 .plot-card { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: var(--space-3); min-height: 420px; }
-.plot-card h3 { margin: 0 0 var(--space-1); }
 .chart-wrap { width: 100%; height: 360px; }
 .chart-tooltip {
   background: #0d162a;
@@ -443,6 +484,9 @@ tr.total td { font-weight: 700; background: var(--surface-subtle); }
 
 @media (max-width: 760px) {
   .kpis-inner { grid-template-columns: 1fr; }
+  .narrative-chart {
+    grid-template-columns: 1fr;
+  }
   th, td {
     padding: 6px;
     font-size: 0.73rem;
