@@ -25,23 +25,23 @@ class InputFieldConfig:
 
 
 INCOME_EXPENSES_FIELDS = [
-    InputFieldConfig(label="Monthly Income (After Tax) (£)", input_id="monthly-income", value=7700),
+    InputFieldConfig(label="Monthly Income (After Tax) (£)", input_id="monthly-income", value=0),
     InputFieldConfig(
         label="Monthly Expenses (Excluding Mortgage) (£)",
         input_id="monthly-expenses",
-        value=5000,
+        value=0,
     ),
 ]
 
 ASSET_FIELDS = [
-    InputFieldConfig(label="ISA Assets (£)", input_id="isa-assets", value=90000),
+    InputFieldConfig(label="ISA Assets (£)", input_id="isa-assets", value=0),
     InputFieldConfig(
         label="ISA Interest Rate (%)",
         input_id="isa-interest-rate",
         value=7,
         input_props={"step": 0.1},
     ),
-    InputFieldConfig(label="Non-ISA Assets (£)", input_id="non-isa-assets", value=10000),
+    InputFieldConfig(label="Non-ISA Assets (£)", input_id="non-isa-assets", value=0),
     InputFieldConfig(
         label="Non-ISA Interest Rate (%)",
         input_id="non-isa-interest-rate",
@@ -54,19 +54,19 @@ PROPERTY_FIELDS = [
     InputFieldConfig(
         label="Home Value (£)",
         input_id="home-value",
-        value=430000,
+        value=0,
         input_props={"step": 10000},
     ),
     InputFieldConfig(
         label="Remaining Mortgage Balance (£)",
         input_id="mortgage-balance",
-        value=370000,
+        value=0,
         input_props={"step": 10000},
     ),
     InputFieldConfig(
         label="Remaining Mortgage Term (Years)",
         input_id="mortgage-term",
-        value=30,
+        value=0,
         input_props={"step": 1, "min": 0},
     ),
     InputFieldConfig(
@@ -86,7 +86,7 @@ PROPERTY_FIELDS = [
 CURRENT_PENSION_FIELD = InputFieldConfig(label="Current Pension Pot (£)", input_id="pension-assets", value=0)
 
 PENSION_FIELDS = [
-    InputFieldConfig(label="Personal Contribution (% or £)", input_id="pension-contribution", value=125),
+    InputFieldConfig(label="Personal Contribution (% or £)", input_id="pension-contribution", value=5.0),
     InputFieldConfig(
         label="Employer Contribution (%)",
         input_id="employer-pension-contribution-rate",
@@ -105,7 +105,7 @@ FORECAST_ADVANCED_FIELDS = [
     InputFieldConfig(
         label="Annual ISA Contribution Limit (£)",
         input_id="isa-annual-contribution",
-        value=40000,
+        value=20000,
         input_props={"step": 1000},
     ),
     InputFieldConfig(
@@ -217,7 +217,7 @@ def build_pension_section() -> html.Div:
                             {"label": " Percentage of Income", "value": "percentage"},
                             {"label": " Fixed Amount", "value": "fixed"},
                         ],
-                        value="fixed",
+                        value="percentage",
                         style={"marginBottom": "12px"},
                         labelStyle={
                             "display": "block",
@@ -272,7 +272,7 @@ def build_forecast_years_section() -> html.Div:
                         min=1,
                         max=40,
                         step=1,
-                        value=40,
+                        value=30,
                         marks={1: "1Y", 5: "5Y", 10: "10Y", 20: "20Y", 30: "30Y", 40: "40Y"},
                         tooltip={"placement": "bottom", "always_visible": True},
                     ),
