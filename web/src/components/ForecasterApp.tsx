@@ -15,14 +15,12 @@ import {
 import { buildForecastViewModel, defaultInputs } from '../application/buildForecastViewModel';
 import type { ForecastInputs } from '../types/forecast';
 
-// Match Dash theme DATA_COLORS from src/financial_forecaster/theme.py
-const dataColors = {
-  isa: '#5B8CFF',
-  nonIsa: '#2DD4BF',
-  pension: '#A78BFA',
-  homeEquity: '#F472B6',
-  withdrawal: '#5B8CFF',
-  expenses: '#2DD4BF',
+const themeDataColor = (token: string, fallback: string): string => {
+  if (typeof window === 'undefined') {
+    return fallback;
+  }
+  const value = getComputedStyle(document.documentElement).getPropertyValue(token).trim();
+  return value || fallback;
 };
 
 const metricColumns = ['Current', '1Y', '5Y', '10Y', '20Y', 'FI'];
@@ -138,6 +136,17 @@ export const ForecasterApp = () => {
     }
   });
   const [isInputsOpen, setIsInputsOpen] = useState(false);
+  const dataColors = useMemo(
+    () => ({
+      isa: themeDataColor('--data-color-1', '#5B8CFF'),
+      nonIsa: themeDataColor('--data-color-2', '#8E75FF'),
+      pension: themeDataColor('--data-color-3', '#6E5BFF'),
+      homeEquity: themeDataColor('--data-color-4', '#C7B8FF'),
+      withdrawal: themeDataColor('--data-color-1', '#5B8CFF'),
+      expenses: themeDataColor('--data-color-2', '#8E75FF'),
+    }),
+    [],
+  );
   const handleNumberFocus = (event: FocusEvent<HTMLInputElement>) => {
     if (Number(event.target.value) === 0) {
       event.target.select();
@@ -300,7 +309,14 @@ export const ForecasterApp = () => {
               value={inputs.forecastYears}
               onChange={(event) => setInputs((prev) => ({ ...prev, forecastYears: Number(event.target.value) }))}
             />
-            <small>{inputs.forecastYears} years</small>
+            <div className="range-markers" aria-hidden="true">
+              <span className="range-marker">1</span>
+              <span className="range-marker">10</span>
+              <span className="range-marker">20</span>
+              <span className="range-marker">30</span>
+              <span className="range-marker">40</span>
+            </div>
+            <small className="range-value">{inputs.forecastYears} years</small>
           </div>
 
           <h3 className="inputs-subtitle">Advanced Inputs</h3>
