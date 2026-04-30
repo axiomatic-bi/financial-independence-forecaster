@@ -14,6 +14,14 @@ SECTION_HEADER_STYLE = {
     "size": 14,
     "color": COLORS["primary"],
 }
+CARD_HEADER_STYLE = {
+    "fontSize": TYPOGRAPHY["size_body"],
+    "color": COLORS["primary"],
+    "margin": f"0 0 {SPACING['lg']} 0",
+    "textTransform": "uppercase",
+    "letterSpacing": TYPOGRAPHY["tracking_label"],
+    "fontWeight": "600",
+}
 
 
 def _format_currency(value: float) -> str:
@@ -94,8 +102,41 @@ def _yearly_indices(length: int) -> list[int]:
     return indices
 
 
+def _year_end_indices(dates: list[str]) -> list[int]:
+    """Return December indices and include the final partial year endpoint."""
+    december_indices = [index for index, date_label in enumerate(dates) if date_label.endswith("-12")]
+    if not dates:
+        return december_indices
+
+    last_index = len(dates) - 1
+    if last_index not in december_indices:
+        december_indices.append(last_index)
+    return december_indices
+
+
 def _sample_yearly(values: list[float], indices: list[int]) -> list[float]:
     return [values[i] for i in indices]
+
+
+def _sparse_year_ticks(years: list[str], interval: int = 5) -> list[str]:
+    """Return sparse tick labels and include the final forecast year."""
+    if not years:
+        return []
+    tick_years = [year for year in years if int(year) % interval == 0]
+    if years[-1] not in tick_years:
+        tick_years.append(years[-1])
+    return tick_years
+
+
+def _build_chart_card(title: str, graph_id: str) -> html.Div:
+    return html.Div(
+        [
+            html.H3(title, style=CARD_HEADER_STYLE),
+            dcc.Graph(id=graph_id),
+        ],
+        className="summary-table-card",
+        style={"flex": "1 1 420px", "minWidth": "0"},
+    )
 
 
 def build_wealth_chart(dates, total_wealth):
@@ -151,8 +192,9 @@ def build_savings_chart(dates, monthly_savings_values):
 
 
 def build_breakdown_chart(dates, isa_values, non_isa_values, pension_values, home_equity_values=None):
-    indices = _yearly_indices(len(dates))
-    sampled_dates = [dates[i] for i in indices]
+    indices = _year_end_indices(dates)
+    sampled_years = [dates[i][:4] for i in indices]
+    tick_years = _sparse_year_ticks(sampled_years)
     sampled_isa = _sample_yearly(isa_values, indices)
     sampled_non_isa = _sample_yearly(non_isa_values, indices)
     sampled_pension = _sample_yearly(pension_values, indices)
@@ -160,7 +202,7 @@ def build_breakdown_chart(dates, isa_values, non_isa_values, pension_values, hom
     chart = go.Figure()
     chart.add_trace(
         go.Scatter(
-            x=sampled_dates,
+            x=sampled_years,
             y=sampled_isa,
             name="ISA Assets",
             line=dict(color=DATA_COLORS[0], width=2, shape="spline", smoothing=0.7),
@@ -169,7 +211,7 @@ def build_breakdown_chart(dates, isa_values, non_isa_values, pension_values, hom
     )
     chart.add_trace(
         go.Scatter(
-            x=sampled_dates,
+            x=sampled_years,
             y=sampled_non_isa,
             name="Non-ISA Assets",
             line=dict(color=DATA_COLORS[1], width=2, shape="spline", smoothing=0.7),
@@ -178,7 +220,7 @@ def build_breakdown_chart(dates, isa_values, non_isa_values, pension_values, hom
     )
     chart.add_trace(
         go.Scatter(
-            x=sampled_dates,
+            x=sampled_years,
             y=sampled_pension,
             name="Pension (SIPP)",
             line=dict(color=DATA_COLORS[2], width=2, shape="spline", smoothing=0.7),
@@ -189,7 +231,7 @@ def build_breakdown_chart(dates, isa_values, non_isa_values, pension_values, hom
         sampled_home_equity = _sample_yearly(home_equity_values, indices)
         chart.add_trace(
             go.Scatter(
-                x=sampled_dates,
+                x=sampled_years,
                 y=sampled_home_equity,
                 name="Home Equity",
                 line=dict(color=DATA_COLORS[4], width=2, shape="spline", smoothing=0.7),
@@ -197,11 +239,7 @@ def build_breakdown_chart(dates, isa_values, non_isa_values, pension_values, hom
             )
         )
     chart.update_layout(
-        title={
-            "text": "ASSET BREAKDOWN OVER TIME (ISA, NON-ISA, PENSION, HOME EQUITY)",
-            "font": SECTION_HEADER_STYLE,
-        },
-        xaxis_title="Month",
+        xaxis_title="Year",
         yaxis_title="Assets (£)",
         hovermode="x unified",
         template="plotly_dark",
@@ -209,7 +247,8 @@ def build_breakdown_chart(dates, isa_values, non_isa_values, pension_values, hom
         plot_bgcolor="rgba(0,0,0,0)",
         hoverlabel=HOVER_LABEL_STYLE,
         height=400,
-        margin={"t": 80, "b": 100},
+        margin={"t": 20, "b": 100},
+        xaxis={"tickmode": "array", "tickvals": tick_years},
         legend=dict(orientation="h", x=0, xanchor="left", y=-0.28, yanchor="top"),
     )
     return chart
@@ -218,15 +257,16 @@ def build_breakdown_chart(dates, isa_values, non_isa_values, pension_values, hom
 def build_withdrawal_chart(dates, isa_values, expense_values):
     withdrawal_39_annual = [isa_val * 0.039 for isa_val in isa_values]
     annual_expenses = [exp * 12 for exp in expense_values]
-    indices = _yearly_indices(len(dates))
-    sampled_dates = [dates[i] for i in indices]
+    indices = _year_end_indices(dates)
+    sampled_years = [dates[i][:4] for i in indices]
+    tick_years = _sparse_year_ticks(sampled_years)
     sampled_withdrawal = _sample_yearly(withdrawal_39_annual, indices)
     sampled_expenses = _sample_yearly(annual_expenses, indices)
 
     chart = go.Figure()
     chart.add_trace(
         go.Scatter(
-            x=sampled_dates,
+            x=sampled_years,
             y=sampled_withdrawal,
             name="3.9% Annual Withdrawal",
             line=dict(color=DATA_COLORS[0], width=2, shape="spline", smoothing=0.7),
@@ -236,18 +276,14 @@ def build_withdrawal_chart(dates, isa_values, expense_values):
     )
     chart.add_trace(
         go.Scatter(
-            x=sampled_dates,
+            x=sampled_years,
             y=sampled_expenses,
             name="Annual Expenses (Inflation-Adjusted)",
             line=dict(color=COLORS["danger"], width=2, dash="dash", shape="spline", smoothing=0.7),
         )
     )
     chart.update_layout(
-        title={
-            "text": "3.9% ANNUAL WITHDRAWAL VS ANNUAL EXPENSES",
-            "font": SECTION_HEADER_STYLE,
-        },
-        xaxis_title="Month",
+        xaxis_title="Year",
         yaxis_title="Amount (£)",
         hovermode="x unified",
         template="plotly_dark",
@@ -255,7 +291,8 @@ def build_withdrawal_chart(dates, isa_values, expense_values):
         plot_bgcolor="rgba(0,0,0,0)",
         hoverlabel=HOVER_LABEL_STYLE,
         height=400,
-        margin={"t": 80, "b": 100},
+        margin={"t": 20, "b": 100},
+        xaxis={"tickmode": "array", "tickvals": tick_years},
         legend=dict(orientation="h", x=0, xanchor="left", y=-0.28, yanchor="top"),
     )
     return chart
@@ -437,27 +474,13 @@ def create_charts_section():
         [
             html.Div(
                 [
-                    html.Div(
-                        [dcc.Graph(id="asset-breakdown-chart")],
-                        style={
-                            "backgroundColor": COLORS["surface"],
-                            "padding": SPACING["lg"],
-                            "borderRadius": RADII["md"],
-                            "border": f"1px solid {COLORS['border']}",
-                            "flex": "1 1 420px",
-                            "minWidth": "0",
-                        },
+                    _build_chart_card(
+                        "Asset Breakdown Over Time (ISA, Non-ISA, Pension, Home Equity)",
+                        "asset-breakdown-chart",
                     ),
-                    html.Div(
-                        [dcc.Graph(id="withdrawal-chart")],
-                        style={
-                            "backgroundColor": COLORS["surface"],
-                            "padding": SPACING["lg"],
-                            "borderRadius": RADII["md"],
-                            "border": f"1px solid {COLORS['border']}",
-                            "flex": "1 1 420px",
-                            "minWidth": "0",
-                        },
+                    _build_chart_card(
+                        "3.9% Annual Withdrawal vs Annual Expenses",
+                        "withdrawal-chart",
                     ),
                 ],
                 style={"display": "flex", "flexWrap": "wrap", "gap": SPACING["xxl"]},

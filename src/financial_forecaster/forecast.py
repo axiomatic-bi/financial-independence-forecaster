@@ -1,8 +1,16 @@
 """Core financial forecasting logic with no UI dependencies."""
 
-from datetime import datetime, timedelta
+from datetime import datetime
 
 FI_EVALUATION_MONTHS = 40 * 12
+
+
+def _add_months(base_date: datetime, months: int) -> datetime:
+    """Add calendar months while keeping day at month start."""
+    month_index = (base_date.month - 1) + months
+    year = base_date.year + (month_index // 12)
+    month = (month_index % 12) + 1
+    return base_date.replace(year=year, month=month, day=1)
 
 
 def calculate_monthly_pension(
@@ -169,8 +177,9 @@ def calculate_forecast(
     fi_month_index = None
     fi_evaluation_end_month = max(months, FI_EVALUATION_MONTHS)
 
+    start_date = datetime.now().replace(day=1, hour=0, minute=0, second=0, microsecond=0)
     for month in range(fi_evaluation_end_month + 1):
-        date = datetime.now() + timedelta(days=30 * month)
+        date = _add_months(start_date, month)
         if month <= months:
             dates.append(date.strftime("%Y-%m"))
 
