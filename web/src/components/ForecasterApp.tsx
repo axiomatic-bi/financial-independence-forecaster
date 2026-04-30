@@ -63,7 +63,7 @@ const advancedAssumptionsFields: { key: keyof ForecastInputs; label: string; ste
 ];
 
 const fiTooltipText = (extractionRate: number) =>
-  `FI here means annual ISA + non-ISA withdrawal at ${extractionRate.toFixed(1)}% covers annual expenses; pension and home equity are excluded.`;
+  `Financial independence (FI) here means annual ISA + non-ISA withdrawal at ${extractionRate.toFixed(1)}% covers annual expenses; pension and home equity are excluded.`;
 const INPUTS_STORAGE_KEY = 'financial-forecaster:inputs';
 const renderAssetTooltip = ({
   active,
@@ -440,7 +440,7 @@ export const ForecasterApp = () => {
                   </span>
                 )}
                 <h3>{card.label}</h3>
-                <p className={card.label === 'FI Date' ? 'kpi-value-strong' : 'kpi-value'}>{card.value}</p>
+                <p className="kpi-value">{card.value}</p>
               </article>
             ))}
           </div>

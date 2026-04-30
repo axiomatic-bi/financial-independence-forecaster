@@ -49,6 +49,7 @@ body {
 
 .hero {
   padding: var(--space-6);
+  padding-left: var(--space-4);
   background: var(--hero-scene-bg);
   border-bottom: 1px solid var(--border);
   box-shadow: inset 0 -40px 80px rgba(6, 10, 20, 0.45);
@@ -62,7 +63,9 @@ body {
   border: 0;
   border-top: 1px solid var(--border);
   border-bottom: 1px solid var(--border);
-  background: var(--bleed-band-blue);
+  background: color-mix(in srgb, var(--bleed-band-blue) 58%, transparent);
+  backdrop-filter: blur(10px) saturate(120%);
+  -webkit-backdrop-filter: blur(10px) saturate(120%);
   color: var(--text-primary);
   padding: var(--space-2) var(--space-3);
   font-size: 0.9rem;
@@ -70,6 +73,9 @@ body {
   text-align: left;
   align-items: center;
   gap: var(--space-1);
+  position: sticky;
+  top: 0;
+  z-index: 30;
 }
 
 .burger-icon {
@@ -223,7 +229,6 @@ body {
   color: var(--text-secondary);
 }
 .kpi-value { margin: var(--space-1) 0 0; font-size: 2.2rem; font-weight: 500; line-height: 1.1; }
-.kpi-value-strong { margin: var(--space-1) 0 0; font-size: 2.2rem; font-weight: 800; line-height: 1.1; }
 .tooltip-wrap {
   position: relative;
   display: inline-flex;
@@ -399,8 +404,7 @@ tr.total td { font-weight: 700; background: var(--surface-subtle); }
     padding: 6px;
     font-size: 0.73rem;
   }
-  .kpi-value,
-  .kpi-value-strong {
+  .kpi-value {
     font-size: 1.9rem;
   }
 }
