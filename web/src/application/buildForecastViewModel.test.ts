@@ -73,10 +73,12 @@ describe('buildForecastViewModel parity', () => {
     expect(vm.yearlyLabels.length).toBeGreaterThan(0);
     expect(vm.assetSeries.length).toBe(4);
     expect(vm.withdrawalSeries.length).toBe(2);
-    expect(vm.kpis[0].value).toMatch(/^£/);
-    expect(vm.kpis[0].value).not.toContain('NaN');
-    expect(vm.kpis[3].value).toMatch(/%$/);
-    expect(vm.kpis[3].value).not.toContain('NaN');
+    const passiveIncomeKpi = vm.kpis.find((kpi) => kpi.label.includes('Passive Income at FI'));
+    const savingsRateKpi = vm.kpis.find((kpi) => kpi.label === 'Savings Rate at FI');
+    expect(passiveIncomeKpi?.value).toMatch(/^£/);
+    expect(passiveIncomeKpi?.value).not.toContain('NaN');
+    expect(savingsRateKpi?.value).toMatch(/%$/);
+    expect(savingsRateKpi?.value).not.toContain('NaN');
     expect(vm.financeRows[0].values.length).toBe(6);
     expect(vm.netWorthRows[vm.netWorthRows.length - 1].isTotal).toBe(true);
   });
