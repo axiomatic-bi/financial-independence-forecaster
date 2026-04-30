@@ -47,6 +47,12 @@ financial_forecaster/
 
 From the `web/` directory:
 
+0. Ensure supported Node version (required by Astro):
+   ```bash
+   node -v
+   ```
+   Must be `>=22.12.0` (for example with nvm: `nvm use 24.15.0`).
+
 1. Install dependencies:
    ```bash
    npm install
