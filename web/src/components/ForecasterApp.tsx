@@ -480,22 +480,24 @@ export const ForecasterApp = () => {
 
         <section className="content">
           <div className="kpis">
-            {vm.kpis.map((card) => (
-              <article key={card.label} className="card">
-                {kpiTooltipText(card.label, inputs.extractionRate) && (
-                  <span className="tooltip-wrap tooltip-corner">
-                    <button type="button" className="info-icon" aria-label="What FI means">
-                      i
-                    </button>
-                    <span className="tooltip-content" role="tooltip">
-                      {kpiTooltipText(card.label, inputs.extractionRate)}
+            <div className="kpis-inner">
+              {vm.kpis.map((card) => (
+                <article key={card.label} className="card">
+                  {kpiTooltipText(card.label, inputs.extractionRate) && (
+                    <span className="tooltip-wrap tooltip-corner">
+                      <button type="button" className="info-icon" aria-label="What FI means">
+                        i
+                      </button>
+                      <span className="tooltip-content" role="tooltip">
+                        {kpiTooltipText(card.label, inputs.extractionRate)}
+                      </span>
                     </span>
-                  </span>
-                )}
-                <h3>{card.label}</h3>
-                <p className="kpi-value">{card.value}</p>
-              </article>
-            ))}
+                  )}
+                  <h3>{card.label}</h3>
+                  <p className="kpi-value">{card.value}</p>
+                </article>
+              ))}
+            </div>
           </div>
 
           <div className="charts">
@@ -646,7 +648,7 @@ export const ForecasterApp = () => {
                   </thead>
                   <tbody>
                     {vm.fiHealthRows.map((row) => (
-                      <tr key={row.label} className="highlight-row">
+                      <tr key={row.label}>
                         <td>
                           {row.label === 'Liquid Runway (Years)' ? (
                             <span className="label-with-info">
