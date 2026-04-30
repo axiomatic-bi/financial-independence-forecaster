@@ -1,0 +1,16 @@
+---
+description: Define module cohesion, naming, and public API conventions for Python modules
+alwaysApply: true
+---
+
+# Python Module Design
+
+- Keep an explicit public API for each module or subpackage (clear exported functions/classes and stable names).
+- Keep each module focused on one responsibility area and extract helpers when scope expands.
+- Prefer descriptive module names that communicate ownership and intent; avoid catch-all growth in `utils.py`.
+- Keep `__init__.py` light: exports, constants, and package metadata only; no runtime side effects.
+- Co-locate helpers near the domain that uses them unless they are genuinely cross-domain.
+- Keep function signatures focused and pass typed data objects instead of long unstructured argument lists.
+- Use dependency injection boundaries for external services, file I/O, and API clients so core logic remains testable.
+- Prefer composition of small builder/helper functions over single large multi-purpose functions.
+- Exception: temporary adapter modules are acceptable during refactors when they are marked for removal and remain thin.

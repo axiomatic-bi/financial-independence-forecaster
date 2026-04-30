@@ -1,0 +1,16 @@
+---
+description: Enforce architecture boundaries and dependency direction for modular Python code
+alwaysApply: true
+---
+
+# Python Architecture Boundaries
+
+- Do keep forecasting and business rules in domain modules; don't place calculation logic in UI or callback modules.
+- Do let `components` modules build views and reusable sections; don't mix them with orchestration or data transformation.
+- Do keep orchestration in callback/controller modules that coordinate flow between input state, domain logic, and rendering.
+- Do preserve one-way dependency direction: presentation -> orchestration -> domain.
+- Do avoid cross-layer imports that bypass intended flow (for example, `components` importing internals from domain modules directly).
+- Do use explicit imports and respect Ruff import ordering; don't rely on wildcard imports.
+- Split modules when they combine UI assembly, orchestration, and business logic.
+- When a file grows mixed responsibilities, extract focused submodules (for example, split input sections/builders from callback wiring).
+- Exception: small compatibility shims can remain thin pass-through modules when they do not add business logic.

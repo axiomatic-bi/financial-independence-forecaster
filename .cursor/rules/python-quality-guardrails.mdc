@@ -1,0 +1,16 @@
+---
+description: Set pragmatic quality guardrails for typing, docs, errors, and tests in Python code
+alwaysApply: true
+---
+
+# Python Quality Guardrails
+
+- Add type hints on new or changed public functions and methods.
+- Add docstrings for public functions that contain business rules, side effects, or non-obvious assumptions.
+- Keep exception handling explicit: catch expected exceptions, add context, and avoid silent broad `except` blocks.
+- Avoid swallowing errors; either recover with a clear fallback or re-raise with actionable context.
+- Add tests for changed domain behavior (forecasting/calculation/business rules), not only happy paths.
+- Do not require full new test suites for presentational-only refactors; use smoke-level validation where behavior is unchanged.
+- Keep test intent clear with names that map to business behavior and edge cases.
+- Align formatting/lint expectations with Ruff and align behavior checks with pytest.
+- Exception: if legacy constraints block immediate full typing or tests, add the smallest safe improvement and note follow-up work.
