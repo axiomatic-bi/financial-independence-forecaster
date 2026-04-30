@@ -581,7 +581,23 @@ export const ForecasterApp = () => {
                 <tbody>
                   {vm.financeRows.map((row) => (
                     <tr key={row.label} className={row.label === 'Liquid Runway (Years)' ? 'highlight-row' : ''}>
-                      <td>{row.label}</td>
+                      <td>
+                        {row.label === 'Liquid Runway (Years)' ? (
+                          <span className="label-with-info">
+                            <span>{row.label}</span>
+                            <span className="tooltip-wrap">
+                              <button type="button" className="info-icon" aria-label="About Liquid Runway">
+                                i
+                              </button>
+                              <span className="tooltip-content tooltip-content--center" role="tooltip">
+                                Static runway based on current liquid assets and current annual spend; assumes no investment growth.
+                              </span>
+                            </span>
+                          </span>
+                        ) : (
+                          row.label
+                        )}
+                      </td>
                       {row.values.map((value, valueIndex) => (
                         <td key={`${row.label}-${valueIndex}`}>{value}</td>
                       ))}

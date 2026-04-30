@@ -327,9 +327,9 @@ body {
 }
 
 .tables { display: grid; grid-template-columns: repeat(auto-fit, minmax(360px, 1fr)); gap: var(--space-3); }
-.table-card { background: var(--surface); border: 1px solid var(--border); border-radius: 14px; padding: var(--space-3); overflow: hidden; }
+.table-card { background: var(--surface); border: 1px solid var(--border); border-radius: 14px; padding: var(--space-3); overflow: visible; }
 .table-card h3 { margin: 0 0 var(--space-1); }
-table { width: 100%; border-collapse: separate; border-spacing: 0; border: 1px solid var(--border); border-radius: 12px; overflow: hidden; table-layout: fixed; }
+table { width: 100%; border-collapse: separate; border-spacing: 0; border: 1px solid var(--border); border-radius: 12px; overflow: visible; table-layout: fixed; }
 th, td {
   border-right: 1px solid var(--border);
   border-bottom: 1px solid var(--border);
