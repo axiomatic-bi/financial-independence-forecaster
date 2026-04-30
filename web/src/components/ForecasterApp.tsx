@@ -104,7 +104,9 @@ const renderAssetTooltip = ({
         <p className="chart-tooltip-row" key={`${String(item.name ?? 'series')}-${index}`}>
           <span className="chart-tooltip-dot" style={{ backgroundColor: item.color ?? '#c0ccec' }} />
           <span>{String(item.name ?? '')}</span>
-          <strong>£{Math.round(Number(item.value ?? 0)).toLocaleString()}</strong>
+          <strong>
+            £{Math.round(Number(item.value ?? 0)).toLocaleString()} ({total > 0 ? ((Number(item.value ?? 0) / total) * 100).toFixed(1) : '0.0'}%)
+          </strong>
         </p>
       ))}
       <p className="chart-tooltip-row chart-tooltip-total">
@@ -236,8 +238,8 @@ export const ForecasterApp = () => {
   return (
     <div className="app">
       <header className="hero">
-        <h1>Financial Forecaster</h1>
-        <p>Plan your financial future with data-driven forecasts</p>
+        <h1>Financial Independence Forecaster</h1>
+        <p>Model your path to financial independence with scenario-based projections</p>
       </header>
       <button
         type="button"
@@ -578,7 +580,7 @@ export const ForecasterApp = () => {
                 </thead>
                 <tbody>
                   {vm.financeRows.map((row) => (
-                    <tr key={row.label} className={row.label === 'Monthly Savings' ? 'highlight-row' : ''}>
+                    <tr key={row.label} className={row.label === 'Liquid Runway (Years)' ? 'highlight-row' : ''}>
                       <td>{row.label}</td>
                       {row.values.map((value, valueIndex) => (
                         <td key={`${row.label}-${valueIndex}`}>{value}</td>

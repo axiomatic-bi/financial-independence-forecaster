@@ -82,7 +82,13 @@ describe('buildForecastViewModel parity', () => {
     expect(savingsRateKpi?.value).toMatch(/%$/);
     expect(savingsRateKpi?.value).not.toContain('NaN');
     expect(vm.financeRows[0].values.length).toBe(6);
-    expect(vm.netWorthRows[vm.netWorthRows.length - 1].isTotal).toBe(true);
+    expect(vm.financeRows[vm.financeRows.length - 1]?.label).toBe('Liquid Runway (Years)');
+    expect(vm.financeRows[vm.financeRows.length - 1]?.values.length).toBe(6);
+    const totalRowIndex = vm.netWorthRows.findIndex((row) => row.label === 'Total Net Worth');
+    expect(totalRowIndex).toBeGreaterThanOrEqual(0);
+    expect(vm.netWorthRows[totalRowIndex].isTotal).toBe(true);
+    expect(vm.netWorthRows[totalRowIndex + 1]?.label).toBe("Real Net Worth (Today's £)");
+    expect(vm.netWorthRows[totalRowIndex + 1]?.values.length).toBe(6);
   });
 
   it('normalizes fallback defaults when falsy values supplied', () => {

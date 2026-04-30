@@ -11,6 +11,7 @@ const finiteOrZero = (value: number): number => (Number.isFinite(value) ? value 
 const currency = (value: number): string => `£${finiteOrZero(value).toLocaleString(undefined, { maximumFractionDigits: 0 })}`;
 const percent = (value: number): string => `${finiteOrZero(value).toFixed(1)}%`;
 const extractionRateLabel = (value: number): string => `${finiteOrZero(value).toFixed(1)}%`;
+const years = (value: number): string => `${finiteOrZero(value).toFixed(1)}y`;
 
 const safeValue = (values: number[], index: number): number => {
   if (!values.length) return 0;
@@ -66,10 +67,23 @@ const buildFinanceRows = (result: ForecastResult): TableRow[] => {
     ['Monthly Mortgage Repayments', result.mortgage_payment_values],
     ['Monthly Savings', result.monthly_savings_values],
   ];
-  return metrics.map(([label, series]) => ({
+  const rows = metrics.map(([label, series]) => ({
     label,
     values: [...TIMEPOINTS_YEARS.map((y) => currency(safeValue(series, monthFromYears(y, maxMonth)))), currency(safeValue(series, fiMonth))],
   }));
+
+  const liquidRunwayValues = [...TIMEPOINTS_YEARS, -1].map((year) => {
+    const monthIndex = year === -1 ? fiMonth : monthFromYears(year, maxMonth);
+    const liquidAssets = safeValue(result.isa_values, monthIndex) + safeValue(result.non_isa_values, monthIndex);
+    const annualSpend =
+      (safeValue(result.expense_values, monthIndex) + safeValue(result.mortgage_payment_values, monthIndex)) * 12;
+    if (annualSpend <= 0) {
+      return liquidAssets > 0 ? 'Infinite' : '0.0y';
+    }
+    return years(liquidAssets / annualSpend);
+  });
+
+  return [...rows, { label: 'Liquid Runway (Years)', values: liquidRunwayValues }];
 };
 
 const buildNetWorthRows = (result: ForecastResult): TableRow[] => {
@@ -94,7 +108,22 @@ const buildNetWorthRows = (result: ForecastResult): TableRow[] => {
       safeValue(result.home_equity_values, index);
     return currency(total);
   });
-  return [...rows, { label: 'Total Net Worth', values: totalValues, isTotal: true }];
+  const inflationRate = result.inflation_rate / 100;
+  const realNetWorthValues = [...TIMEPOINTS_YEARS, -1].map((year) => {
+    const monthIndex = year === -1 ? fiMonth : monthFromYears(year, maxMonth);
+    const nominalValue =
+      safeValue(result.pension_values, monthIndex) +
+      safeValue(result.isa_values, monthIndex) +
+      safeValue(result.non_isa_values, monthIndex) +
+      safeValue(result.home_equity_values, monthIndex);
+    const inflationFactor = (1 + inflationRate) ** (monthIndex / 12);
+    return currency(inflationFactor > 0 ? nominalValue / inflationFactor : nominalValue);
+  });
+  return [
+    ...rows,
+    { label: 'Total Net Worth', values: totalValues, isTotal: true },
+    { label: "Real Net Worth (Today's £)", values: realNetWorthValues },
+  ];
 };
 
 export const normalizeInputs = (inputs: ForecastInputs): ForecastInputs => ({
