@@ -1,38 +1,32 @@
-# Financial Forecaster Dashboard
+# Financial Forecaster
 
-An interactive Dash application for forecasting personal wealth using income, expenses, investments, pension contributions, and property equity assumptions.
+Financial forecaster with:
 
-## Features
+- legacy Python Dash app (reference implementation), and
+- Astro + React static web app for GitHub Pages publishing.
 
-- Monthly forecasting for ISA, non-ISA, pension, and home equity.
-- Interactive charts for wealth, savings, withdrawal sustainability, and asset mix.
-- Configurable assumptions: inflation, wage growth, pension settings, and mortgage.
-- Structured Python package layout for maintainability and testing.
+## Current Deployment Target
 
-## Project Structure
+The publishable web app is in `web/` and is designed for GitHub Pages static hosting.
+
+The Python Dash app in `src/financial_forecaster` remains the baseline/oracle for calculation parity during migration.
+
+## Repository Structure
 
 ```text
 financial_forecaster/
-├── app.py                                # Compatibility entrypoint
-├── pyproject.toml                        # Project and tooling config
-├── requirements.txt                      # Runtime dependencies
-├── assets/
-│   └── style.css
-├── src/
-│   └── financial_forecaster/
-│       ├── app.py                        # Package entrypoint
-│       ├── dashboard.py                  # Dash app and layout
-│       ├── callbacks.py                  # Dash callback wiring
-│       ├── forecast.py                   # Pure financial calculations
-│       ├── theme.py                      # Shared colors and helpers
-│       └── components/
-│           ├── charts.py
-│           └── inputs.py
-└── tests/
-    └── test_forecast.py                  # Forecast engine tests
+├── src/financial_forecaster/             # Python reference app + domain logic
+├── tests/                                # Python tests
+├── scripts/generate_forecast_fixtures.py # Python fixture snapshot generator
+├── docs/migration/                       # Migration policy and contract docs
+├── web/                                  # Astro + React GitHub Pages app
+│   ├── src/domain/forecast.ts            # TS port of domain calculations
+│   ├── src/application/                  # buildForecastViewModel app layer
+│   └── src/fixtures/forecast-fixtures.json
+└── .github/workflows/deploy-pages.yml    # Pages CI/CD workflow
 ```
 
-## Setup
+## Python Reference App (Local)
 
 1. Create and activate a virtual environment:
    ```bash
@@ -43,24 +37,63 @@ financial_forecaster/
    ```bash
    pip install -e ".[dev]"
    ```
-3. Run the app:
+3. Run the Dash app:
    ```bash
-   python app.py
+   python -m financial_forecaster.app
    ```
-4. Open [http://127.0.0.1:8050/](http://127.0.0.1:8050/).
+4. Open `http://127.0.0.1:8050/`.
 
-## Development
+## Web App (Astro + React) Local
 
-- Run tests:
+From the `web/` directory:
+
+1. Install dependencies:
+   ```bash
+   npm install
+   ```
+2. Run tests:
+   ```bash
+   npm run test
+   ```
+3. Run dev server:
+   ```bash
+   npm run dev
+   ```
+4. Build static output:
+   ```bash
+   npm run build
+   ```
+
+## Fixture and Parity Workflow
+
+- Generate Python baseline fixtures:
   ```bash
-  pytest
+  python scripts/generate_forecast_fixtures.py
   ```
-- Optional linting:
-  ```bash
-  ruff check .
-  ```
+- Fixture output: `web/src/fixtures/forecast-fixtures.json`
+- Frontend parity tests are in `web/src/application/buildForecastViewModel.test.ts`.
 
-## Notes
+## Publishing to GitHub Pages
 
-- Root-level modules are kept as lightweight compatibility shims while the main code lives under `src/financial_forecaster`.
-- Core simulation logic in `forecast.py` intentionally stays UI-independent for easier testing and reuse.
+1. Ensure repository Settings -> Pages uses **GitHub Actions** as source.
+2. Push to `main`.
+3. Workflow `.github/workflows/deploy-pages.yml` will:
+   - install dependencies,
+   - run frontend tests,
+   - build Astro static assets,
+   - deploy `web/dist` to GitHub Pages.
+
+## Publish Readiness Checklist
+
+- `python scripts/generate_forecast_fixtures.py` succeeds.
+- `cd web && npm run test` passes.
+- `cd web && npm run build` succeeds.
+- Main KPI cards, asset chart, withdrawal chart, and summary tables render correctly.
+- Mobile layout remains usable for input editing and chart viewing.
+- Deployed Pages URL loads and recomputes outputs in-browser.
+
+## Migration Policies
+
+- Formatting/semantic policy: `docs/migration/formatting-policy.md`
+- Python contract snapshot: `docs/migration/python-contract.md`
+- Reduced-scope fallback v1 plan: `docs/migration/fallback-v1.md`
