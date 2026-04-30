@@ -17,11 +17,11 @@ COLORS = {
 }
 
 DATA_COLORS = [
-    "#7B8DFF",
-    "#4FA3FF",
-    "#8B6DFF",
-    "#33C7B5",
-    "#F2A65A",
+    "#5B8CFF",  # vivid blue
+    "#2DD4BF",  # teal
+    "#A78BFA",  # violet
+    "#F59E0B",  # amber
+    "#F472B6",  # rose
 ]
 
 TYPOGRAPHY = {
