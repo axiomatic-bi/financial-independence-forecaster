@@ -3,6 +3,12 @@ from dash import dcc, html
 
 from financial_forecaster.theme import COLORS, DATA_COLORS, RADII, SPACING, TYPOGRAPHY, hex_to_rgba
 
+HOVER_LABEL_STYLE = {
+    "bgcolor": COLORS["surface"],
+    "bordercolor": COLORS["border"],
+    "font": {"color": COLORS["text_primary"], "size": 13},
+}
+
 
 def build_wealth_chart(dates, total_wealth):
     chart = go.Figure()
@@ -22,7 +28,11 @@ def build_wealth_chart(dates, total_wealth):
         yaxis_title="Total Wealth (£)",
         hovermode="x unified",
         template="plotly_dark",
+        paper_bgcolor="rgba(0,0,0,0)",
+        plot_bgcolor="rgba(0,0,0,0)",
+        hoverlabel=HOVER_LABEL_STYLE,
         height=400,
+        legend=dict(orientation="h", x=0, xanchor="left", y=1.02, yanchor="bottom"),
     )
     return chart
 
@@ -43,6 +53,9 @@ def build_savings_chart(dates, monthly_savings_values):
         yaxis_title="Savings (£)",
         hovermode="x unified",
         template="plotly_dark",
+        paper_bgcolor="rgba(0,0,0,0)",
+        plot_bgcolor="rgba(0,0,0,0)",
+        hoverlabel=HOVER_LABEL_STYLE,
         height=400,
         showlegend=False,
     )
@@ -94,7 +107,11 @@ def build_breakdown_chart(dates, isa_values, non_isa_values, pension_values, hom
         yaxis_title="Assets (£)",
         hovermode="x unified",
         template="plotly_dark",
+        paper_bgcolor="rgba(0,0,0,0)",
+        plot_bgcolor="rgba(0,0,0,0)",
+        hoverlabel=HOVER_LABEL_STYLE,
         height=400,
+        legend=dict(orientation="h", x=0, xanchor="left", y=1.02, yanchor="bottom"),
     )
     return chart
 
@@ -128,7 +145,11 @@ def build_withdrawal_chart(dates, isa_values, expense_values):
         yaxis_title="Amount (£)",
         hovermode="x unified",
         template="plotly_dark",
+        paper_bgcolor="rgba(0,0,0,0)",
+        plot_bgcolor="rgba(0,0,0,0)",
+        hoverlabel=HOVER_LABEL_STYLE,
         height=400,
+        legend=dict(orientation="h", x=0, xanchor="left", y=1.02, yanchor="bottom"),
     )
     return chart
 
@@ -152,12 +173,13 @@ def build_summary_stats(
     final_monthly_expenses=0,
     final_annual_expenses=0,
     home_value=0,
+    current_home_equity=0,
     final_home_equity=0,
     final_mortgage_balance=0,
     monthly_mortgage_payment=0,
     mortgage_interest_rate=0,
 ):
-    def kpi_card(label, value, color=COLORS["text_primary"]):
+    def kpi_card(label, value):
         return html.Div(
             [
                 html.H3(
@@ -172,14 +194,16 @@ def build_summary_stats(
                 ),
                 html.P(
                     value,
-                    style={"fontSize": TYPOGRAPHY["size_value"], "fontWeight": "700", "color": color, "margin": "0"},
+                    style={
+                        "fontSize": TYPOGRAPHY["size_callout_value"],
+                        "fontWeight": "700",
+                        "color": COLORS["primary"],
+                        "margin": "0",
+                    },
                 ),
             ],
             style={
-                "backgroundColor": COLORS["surface_subtle"],
-                "padding": f"{SPACING['sm']} {SPACING['sm']}",
-                "borderRadius": RADII["sm"],
-                "border": f"1px solid {COLORS['border']}",
+                "padding": "0",
             },
         )
 
@@ -188,7 +212,7 @@ def build_summary_stats(
             html.Div(
                 [
                     html.H3(
-                        "KEY METRICS",
+                        "CURRENT FINANCES",
                         style={
                             "fontSize": TYPOGRAPHY["size_section_label"],
                             "color": COLORS["text_secondary"],
@@ -200,20 +224,12 @@ def build_summary_stats(
                     ),
                     html.Div(
                         [
-                            kpi_card("Monthly Income", f"£{income:,.0f}", COLORS["primary"]),
-                            kpi_card("Monthly Expenses", f"£{expenses:,.0f}", COLORS["danger"]),
-                            kpi_card(
-                                "Monthly Savings",
-                                f"£{monthly_savings:,.0f}",
-                                COLORS["success"] if monthly_savings >= 0 else COLORS["danger"],
-                            ),
-                            kpi_card(
-                                "Savings Rate",
-                                f"{(monthly_savings / income * 100) if income > 0 else 0:.1f}%",
-                                COLORS["primary_light"],
-                            ),
-                            kpi_card("Current Assets", f"£{isa_assets + non_isa_assets:,.0f}", COLORS["primary"]),
-                            kpi_card("Monthly Pension", f"£{monthly_pension:,.0f}", COLORS["primary_light"]),
+                            kpi_card("Monthly Income", f"£{income:,.0f}"),
+                            kpi_card("Monthly Expenses", f"£{expenses:,.0f}"),
+                            kpi_card("Monthly Savings", f"£{monthly_savings:,.0f}"),
+                            kpi_card("Savings Rate", f"{(monthly_savings / income * 100) if income > 0 else 0:.1f}%"),
+                            kpi_card("Current Assets", f"£{isa_assets + non_isa_assets:,.0f}"),
+                            kpi_card("Monthly Pension", f"£{monthly_pension:,.0f}"),
                         ],
                         style={
                             "display": "grid",
@@ -228,7 +244,7 @@ def build_summary_stats(
             else html.Div(
                 [
                     html.H3(
-                        "KEY METRICS",
+                        "CURRENT FINANCES",
                         style={
                             "fontSize": TYPOGRAPHY["size_section_label"],
                             "color": COLORS["text_secondary"],
@@ -240,16 +256,12 @@ def build_summary_stats(
                     ),
                     html.Div(
                         [
-                            kpi_card("Monthly Income", f"£{income:,.0f}", COLORS["primary"]),
-                            kpi_card("Monthly Expenses", f"£{expenses:,.0f}", COLORS["danger"]),
-                            kpi_card(
-                                "Monthly Savings",
-                                f"£{monthly_savings:,.0f}",
-                                COLORS["success"] if monthly_savings >= 0 else COLORS["danger"],
-                            ),
-                            kpi_card("Monthly Payment", f"£{monthly_mortgage_payment:,.0f}", COLORS["danger"]),
-                            kpi_card("Current Assets", f"£{isa_assets + non_isa_assets:,.0f}", COLORS["primary"]),
-                            kpi_card("Home Equity", f"£{final_home_equity:,.0f}", COLORS["success"]),
+                            kpi_card("Monthly Income", f"£{income:,.0f}"),
+                            kpi_card("Monthly Expenses", f"£{expenses:,.0f}"),
+                            kpi_card("Monthly Savings", f"£{monthly_savings:,.0f}"),
+                            kpi_card("Monthly Payment", f"£{monthly_mortgage_payment:,.0f}"),
+                            kpi_card("Current Assets", f"£{isa_assets + non_isa_assets:,.0f}"),
+                            kpi_card("Home Equity", f"£{current_home_equity:,.0f}"),
                         ],
                         style={
                             "display": "grid",
@@ -276,12 +288,10 @@ def build_projected_stats(
 ):
     if years_until_expenses_covered is None:
         years_text = "Never"
-        years_color = COLORS["danger"]
     else:
         years_text = f"{years_until_expenses_covered:.1f} years"
-        years_color = COLORS["success"]
 
-    def kpi_card(label, value, color=COLORS["text_primary"]):
+    def kpi_card(label, value):
         return html.Div(
             [
                 html.H3(
@@ -296,35 +306,33 @@ def build_projected_stats(
                 ),
                 html.P(
                     value,
-                    style={"fontSize": TYPOGRAPHY["size_value"], "fontWeight": "700", "color": color, "margin": "0"},
+                    style={
+                        "fontSize": TYPOGRAPHY["size_callout_value"],
+                        "fontWeight": "700",
+                        "color": COLORS["primary"],
+                        "margin": "0",
+                    },
                 ),
             ],
             style={
-                "backgroundColor": COLORS["surface_subtle"],
-                "padding": f"{SPACING['sm']} {SPACING['sm']}",
-                "borderRadius": RADII["sm"],
-                "border": f"1px solid {COLORS['border']}",
+                "padding": "0",
             },
         )
 
     cards = [
-        kpi_card("Non-Pension Wealth", f"£{(final_wealth - final_pension):,.0f}", COLORS["success"]),
-        kpi_card("Pension Pot", f"£{final_pension:,.0f}", COLORS["primary_light"]),
-        kpi_card("Final ISA", f"£{final_isa:,.0f}", COLORS["primary"]),
-        kpi_card("3.9% Withdrawal", f"£{withdrawal_39_annual:,.0f}", COLORS["success"]),
-        kpi_card("Final Monthly Expenses", f"£{final_monthly_expenses:,.0f}", COLORS["danger"]),
-        kpi_card("Years Until FI", years_text, years_color),
+        kpi_card("Non-Pension Wealth", f"£{(final_wealth - final_pension):,.0f}"),
+        kpi_card("Pension Pot", f"£{final_pension:,.0f}"),
+        kpi_card("Final ISA", f"£{final_isa:,.0f}"),
+        kpi_card("3.9% Withdrawal", f"£{withdrawal_39_annual:,.0f}"),
+        kpi_card("Final Monthly Expenses", f"£{final_monthly_expenses:,.0f}"),
+        kpi_card("Years Until FI", years_text),
     ]
 
     if home_value > 0:
         cards.extend(
             [
-                kpi_card("Home Equity", f"£{final_home_equity:,.0f}", COLORS["success"]),
-                kpi_card(
-                    "Total Net Worth",
-                    f"£{(final_wealth + final_home_equity - final_pension):,.0f}",
-                    COLORS["success"],
-                ),
+                kpi_card("Home Equity", f"£{final_home_equity:,.0f}"),
+                kpi_card("Total Net Worth", f"£{(final_wealth + final_home_equity - final_pension):,.0f}"),
             ]
         )
 
@@ -424,22 +432,6 @@ def create_charts_section():
                     ),
                 ],
                 style={"display": "flex", "flexWrap": "wrap", "gap": SPACING["xxl"]},
-            ),
-            html.Div(
-                [
-                    html.H3(
-                        "PROJECTED OUTCOMES",
-                        style={
-                            "fontSize": TYPOGRAPHY["size_section_label"],
-                            "color": COLORS["text_secondary"],
-                            "margin": f"{SPACING['xxl']} 0 {SPACING['md']} 0",
-                            "textTransform": "uppercase",
-                            "letterSpacing": TYPOGRAPHY["tracking_label"],
-                            "fontWeight": "600",
-                        },
-                    ),
-                    html.Div(id="projected-stats"),
-                ]
             ),
         ],
         style={"marginTop": SPACING["xxl"]},

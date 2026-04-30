@@ -30,8 +30,10 @@ TYPOGRAPHY = {
     "size_section_label": "12px",
     "size_body": "14px",
     "size_value": "16px",
+    "size_callout_value": "20px",
     "size_title": "20px",
     "size_heading": "22px",
+    "size_hero_title": "42px",
     "tracking_tight": "0.4px",
     "tracking_label": "0.5px",
 }

@@ -44,14 +44,14 @@ PANEL_TITLE_STYLE = {
 }
 
 PANEL_STYLE = {
-    "backgroundColor": COLORS["surface"],
+    "backgroundColor": "transparent",
     "padding": SPACING["xl"],
-    "borderRadius": RADII["md"],
-    "border": f"1px solid {COLORS['border']}",
+    "borderRadius": "0",
+    "border": "none",
     "height": "100%",
 }
 
-PANEL_WRAPPER_STYLE = {"paddingRight": SPACING["xl"]}
+PANEL_WRAPPER_STYLE = {"paddingRight": "0"}
 
 BUTTON_STYLE = {
     "width": "100%",

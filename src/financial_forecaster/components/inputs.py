@@ -26,7 +26,6 @@ def create_input_panel():
                     html.H2("Financial Details", style=PANEL_TITLE_STYLE),
                     build_income_expenses_section(),
                     build_assets_section(),
-                    build_forecast_years_section(),
                     html.Details(
                         [
                             html.Summary("Advanced Inputs", style=SUMMARY_STYLE),
@@ -44,3 +43,7 @@ def create_input_panel():
         ],
         style=PANEL_WRAPPER_STYLE,
     )
+
+
+def create_forecast_period_section():
+    return build_forecast_years_section()

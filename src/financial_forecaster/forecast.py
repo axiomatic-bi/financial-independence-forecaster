@@ -2,6 +2,8 @@
 
 from datetime import datetime, timedelta
 
+FI_EVALUATION_MONTHS = 40 * 12
+
 
 def calculate_monthly_pension(
     income: float, pension_type: str, pension_contribution: float, pension_rate: float
@@ -160,9 +162,13 @@ def calculate_forecast(
     current_mortgage_balance = mortgage_balance
     current_home_equity = max(0, home_value - current_mortgage_balance)
 
-    for month in range(months + 1):
+    years_until_covered = None
+    fi_evaluation_end_month = max(months, FI_EVALUATION_MONTHS)
+
+    for month in range(fi_evaluation_end_month + 1):
         date = datetime.now() + timedelta(days=30 * month)
-        dates.append(date.strftime("%Y-%m"))
+        if month <= months:
+            dates.append(date.strftime("%Y-%m"))
 
         month_result = simulate_month(
             month=month,
@@ -204,18 +210,29 @@ def calculate_forecast(
 
         current_home_equity = max(0, home_value - current_mortgage_balance)
 
-        isa_values.append(current_isa)
-        non_isa_values.append(current_non_isa)
-        pension_values.append(current_pension)
-        expense_values.append(current_expenses)
-        monthly_savings_values.append(month_result["savings"])
-        mortgage_balance_values.append(current_mortgage_balance)
-        home_equity_values.append(current_home_equity)
+        if month <= months:
+            isa_values.append(current_isa)
+            non_isa_values.append(current_non_isa)
+            pension_values.append(current_pension)
+            expense_values.append(current_expenses)
+            monthly_savings_values.append(month_result["savings"])
+            mortgage_balance_values.append(current_mortgage_balance)
+            home_equity_values.append(current_home_equity)
 
-        total_wealth_with_equity = (
-            current_isa + current_non_isa + current_pension + current_home_equity
-        )
-        total_wealth.append(total_wealth_with_equity)
+            total_wealth_with_equity = (
+                current_isa + current_non_isa + current_pension + current_home_equity
+            )
+            total_wealth.append(total_wealth_with_equity)
+
+        if years_until_covered is None:
+            annual_withdrawal = (
+                (current_isa * 0.039)
+                + (min(current_non_isa, 3000) * 0.039)
+                + (max(0, current_non_isa - 3000) * 0.039 * 0.76)
+            )
+            month_annual_expenses = current_expenses * 12
+            if annual_withdrawal >= month_annual_expenses:
+                years_until_covered = month / 12
 
     final_wealth = total_wealth[-1]
     final_pension = pension_values[-1]
@@ -233,19 +250,6 @@ def calculate_forecast(
 
     final_monthly_expenses = expense_values[-1] if expense_values else expenses
     final_annual_expenses = final_monthly_expenses * 12
-    years_until_covered = None
-
-    for i, (isa_val, non_isa_val) in enumerate(zip(isa_values, non_isa_values)):
-        annual_withdrawal = (
-            (isa_val * 0.039)
-            + (min(non_isa_val, 3000) * 0.039)
-            + (max(0, non_isa_val - 3000) * 0.039 * 0.76)
-        )
-        month_annual_expenses = expense_values[i] * 12 if i < len(expense_values) else final_annual_expenses
-        if annual_withdrawal >= month_annual_expenses:
-            years_until_covered = i / 12
-            break
-
     return {
         "dates": dates,
         "total_wealth": total_wealth,
