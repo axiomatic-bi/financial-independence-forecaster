@@ -1,4 +1,4 @@
-from dash import Input, Output
+from dash import Input, Output, State
 
 from financial_forecaster.components.charts import (
     build_breakdown_chart,
@@ -11,6 +11,24 @@ from financial_forecaster.forecast import calculate_forecast
 
 def register_callbacks(app):
     """Register all callbacks for the dashboard."""
+
+    @app.callback(
+        [
+            Output("app-side-panel", "className"),
+            Output("side-panel-bar", "children"),
+            Output("app-main-column", "className"),
+        ],
+        Input("side-panel-bar", "n_clicks"),
+        State("app-side-panel", "className"),
+    )
+    def toggle_side_panel(n_clicks, current_class_name):
+        """Toggle mobile full-width inputs view."""
+
+        is_open = bool(n_clicks) and n_clicks % 2 == 1
+        side_panel_class = "app-side-panel is-open" if is_open else "app-side-panel"
+        bar_label = "✕ Close inputs" if is_open else "☰ Inputs"
+        main_column_class = "app-main-column mobile-hidden" if is_open else "app-main-column"
+        return side_panel_class, bar_label, main_column_class
 
     @app.callback(
         [

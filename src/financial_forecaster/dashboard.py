@@ -86,15 +86,27 @@ main_column = html.Div(
     ],
     style={"flex": "1", "minWidth": "0", "display": "flex", "flexDirection": "column"},
     className="app-main-column",
+    id="app-main-column",
 )
 
 app.layout = html.Div(
     [
         header,
+        html.Button(
+            "☰ Inputs",
+            id="side-panel-bar",
+            n_clicks=0,
+            className="side-panel-bar",
+        ),
         html.Div(
             [
                 html.Div(
-                    [create_input_panel()],
+                    [
+                        html.Div(
+                            [create_input_panel()],
+                            className="app-side-panel-content",
+                        ),
+                    ],
                     style={
                         "width": "clamp(260px, 24vw, 340px)",
                         "minWidth": "clamp(260px, 24vw, 340px)",
@@ -105,6 +117,7 @@ app.layout = html.Div(
                         "alignSelf": "stretch",
                     },
                     className="app-side-panel",
+                    id="app-side-panel",
                 ),
                 main_column,
             ],
