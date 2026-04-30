@@ -1,0 +1,39 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "financial-forecaster"
+version = "0.1.0"
+description = "Interactive Dash app for personal financial forecasting."
+readme = "README.md"
+requires-python = ">=3.10"
+dependencies = [
+  "dash==2.14.2",
+  "plotly==5.18.0",
+  "pandas==2.1.4",
+  "numpy==1.26.3",
+]
+
+[project.optional-dependencies]
+dev = [
+  "pytest>=8.0.0",
+  "ruff>=0.6.0",
+]
+
+[tool.setuptools]
+package-dir = {"" = "src"}
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["src"]
+
+[tool.ruff]
+line-length = 130
+target-version = "py310"
+
+[tool.ruff.lint]
+select = ["E", "F", "I"]

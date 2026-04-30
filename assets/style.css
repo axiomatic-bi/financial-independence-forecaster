@@ -1,0 +1,129 @@
+/* ========== DARK MODE THEME ========== */
+/* Colors (matching Python COLORS dict) */
+:root {
+    --bg-dark: #0f172a;
+    --surface: #1e293b;
+    --surface-hover: #334155;
+    --primary: #3b82f6;
+    --primary-light: #60a5fa;
+    --success: #10b981;
+    --danger: #ef4444;
+    --text-primary: #f1f5f9;
+    --text-secondary: #cbd5e1;
+    --border: #475569;
+}
+
+/* Global styles */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
+        'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
+        sans-serif;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    background-color: var(--bg-dark);
+    color: var(--text-primary);
+}
+
+/* ========== INPUT STYLES (DARK MODE) ========== */
+input,
+textarea,
+select {
+    background-color: var(--surface-hover) !important;
+    color: var(--text-primary) !important;
+    border: 1px solid var(--border) !important;
+    border-radius: 6px !important;
+    padding: 10px 12px !important;
+    font-size: 14px !important;
+    transition: all 0.2s ease;
+    box-sizing: border-box !important;
+}
+
+input:hover,
+textarea:hover,
+select:hover {
+    border-color: var(--primary) !important;
+    background-color: #3f4758 !important;
+}
+
+input:focus,
+textarea:focus,
+select:focus {
+    outline: none !important;
+    border-color: var(--primary) !important;
+    background-color: var(--surface-hover) !important;
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.2) !important;
+}
+
+/* Specific input overrides */
+input[type='number'],
+input[type='text'],
+input[type='email'],
+input[type='password'] {
+    background-color: var(--surface-hover) !important;
+    color: var(--text-primary) !important;
+    border: 1px solid var(--border) !important;
+}
+
+/* ========== SLIDER STYLES (DARK MODE) ========== */
+.rc-slider {
+    margin-top: 10px;
+}
+
+.rc-slider-track {
+    background-color: var(--primary);
+}
+
+.rc-slider-handle {
+    border-color: var(--primary) !important;
+    background-color: var(--primary) !important;
+}
+
+.rc-slider-handle:hover {
+    box-shadow: 0 0 5px rgba(59, 130, 246, 0.5) !important;
+}
+
+.rc-slider-mark-text {
+    color: var(--text-secondary) !important;
+}
+
+.rc-slider-dot {
+    border-color: var(--border) !important;
+}
+
+/* ========== CHART STYLES (DARK MODE) ========== */
+.plotly-graph-div {
+    border-radius: 8px !important;
+    background-color: var(--surface) !important;
+    border: 1px solid var(--border) !important;
+    padding: 0 !important;
+    margin: 0 !important;
+}
+
+.plotly {
+    background-color: transparent !important;
+}
+
+.svg-container {
+    background-color: transparent !important;
+}
+
+/* Plotly background fix */
+.plotly-graph-div .plotly svg {
+    background-color: transparent !important;
+}
+
+/* ========== RESPONSIVE ========== */
+@media (max-width: 768px) {
+    input[type='number'],
+    input[type='text'],
+    textarea,
+    select {
+        font-size: 16px !important;
+    }
+}

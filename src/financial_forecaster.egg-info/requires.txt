@@ -1,0 +1,8 @@
+dash==2.14.2
+plotly==5.18.0
+pandas==2.1.4
+numpy==1.26.3
+
+[dev]
+pytest>=8.0.0
+ruff>=0.6.0
