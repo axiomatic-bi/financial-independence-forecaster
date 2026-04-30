@@ -56,8 +56,9 @@ def simulate_month(
     wage_increase_rate: float,
     pension_type: str,
     pension_contribution: float,
+    employer_pension_contribution_rate: float,
     pension_rate: float,
-    pension_tax_relief: bool,
+    pension_tax_relief_rate: float,
 ) -> dict:
     """Simulate one month and return updated account state."""
     if month > 0 and date.month == 1:
@@ -70,9 +71,10 @@ def simulate_month(
     current_monthly_pension = calculate_monthly_pension(
         current_income, pension_type, pension_contribution, pension_rate
     )
+    current_monthly_employer_pension = current_income * (employer_pension_contribution_rate / 100)
 
-    if pension_tax_relief and current_monthly_pension > 0:
-        current_monthly_pension = current_monthly_pension * 1.2
+    if pension_tax_relief_rate and current_monthly_pension > 0:
+        current_monthly_pension = current_monthly_pension * (1 + pension_tax_relief_rate / 100)
 
     current_monthly_savings = current_income - current_expenses - current_monthly_pension
 
@@ -90,7 +92,7 @@ def simulate_month(
             current_non_isa += non_isa_contribution
             isa_annual_used += isa_contribution
 
-        current_pension += current_monthly_pension
+        current_pension += current_monthly_pension + current_monthly_employer_pension
 
     return {
         "isa": current_isa,
@@ -116,11 +118,13 @@ def calculate_forecast(
     mortgage_term: float = 0,
     mortgage_interest_rate: float = 3.83,
     home_appreciation_rate: float = 3.0,
+    pension_assets: float = 0,
     pension_contribution: float = 0,
+    employer_pension_contribution_rate: float = 0.0,
     pension_type: str = "percentage",
     pension_rate: float = 5.0,
     pension_interest_rate: float = 5.0,
-    pension_tax_relief: bool = True,
+    pension_tax_relief_rate: float = 20.0,
     inflation_rate: float = 2.0,
     wage_increase_rate: float = 3.0,
     isa_annual_contribution: float = 40000,
@@ -133,7 +137,9 @@ def calculate_forecast(
     non_isa_assets = non_isa_assets or 0
     non_isa_rate = (non_isa_rate or 0) / 100
     pension_interest_rate = (pension_interest_rate or 0) / 100
+    pension_assets = pension_assets or 0
     pension_contribution = pension_contribution or 0
+    employer_pension_contribution_rate = employer_pension_contribution_rate or 0
 
     home_value = home_value or 0
     mortgage_balance = mortgage_balance or 0
@@ -148,6 +154,8 @@ def calculate_forecast(
     monthly_pension = calculate_monthly_pension(
         income, pension_type, pension_contribution, pension_rate
     )
+    if pension_tax_relief_rate and monthly_pension > 0:
+        monthly_pension = monthly_pension * (1 + pension_tax_relief_rate / 100)
     monthly_savings = income - expenses - monthly_pension
     annual_isa_limit = isa_annual_contribution
 
@@ -165,7 +173,7 @@ def calculate_forecast(
 
     current_isa = isa_assets
     current_non_isa = non_isa_assets
-    current_pension = 0
+    current_pension = pension_assets
     current_income = income
     current_expenses = expenses
     isa_annual_used = 0
@@ -200,8 +208,9 @@ def calculate_forecast(
             wage_increase_rate=wage_increase_rate,
             pension_type=pension_type,
             pension_contribution=pension_contribution,
+            employer_pension_contribution_rate=employer_pension_contribution_rate,
             pension_rate=pension_rate,
-            pension_tax_relief=pension_tax_relief,
+            pension_tax_relief_rate=pension_tax_relief_rate,
         )
 
         current_isa = month_result["isa"]

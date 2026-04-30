@@ -5,9 +5,11 @@ from dash import dcc, html
 
 from financial_forecaster.styles.forms import INPUT_STYLE
 from financial_forecaster.styles.inputs import (
+    INFO_ICON_STYLE,
     LABEL_STYLE,
     SECTION_CONTAINER_STYLE,
     SECTION_HEADING_MARGIN_STYLE,
+    SECTION_HEADING_ROW_STYLE,
     SECTION_TITLE_STYLE,
 )
 
@@ -81,8 +83,16 @@ PROPERTY_FIELDS = [
     ),
 ]
 
+CURRENT_PENSION_FIELD = InputFieldConfig(label="Current Pension Pot (£)", input_id="pension-assets", value=0)
+
 PENSION_FIELDS = [
-    InputFieldConfig(label="Contribution (% or £)", input_id="pension-contribution", value=125),
+    InputFieldConfig(label="Personal Contribution (% or £)", input_id="pension-contribution", value=125),
+    InputFieldConfig(
+        label="Employer Contribution (%)",
+        input_id="employer-pension-contribution-rate",
+        value=3.0,
+        input_props={"step": 0.1},
+    ),
     InputFieldConfig(
         label="Interest Rate (%)",
         input_id="pension-interest-rate",
@@ -93,7 +103,7 @@ PENSION_FIELDS = [
 
 FORECAST_ADVANCED_FIELDS = [
     InputFieldConfig(
-        label="Target ISA Contribution (£)",
+        label="Annual ISA Contribution Limit (£)",
         input_id="isa-annual-contribution",
         value=40000,
         input_props={"step": 1000},
@@ -113,8 +123,17 @@ FORECAST_ADVANCED_FIELDS = [
 ]
 
 
-def build_section_heading(title: str) -> html.H3:
-    return html.H3(title, style=SECTION_TITLE_STYLE)
+def build_section_heading(title: str, help_text: str | None = None) -> html.Div | html.H3:
+    heading = html.H3(title, style={**SECTION_TITLE_STYLE, "marginBottom": "0"})
+    if not help_text:
+        return html.H3(title, style=SECTION_TITLE_STYLE)
+    return html.Div(
+        [
+            heading,
+            html.Span("i", title=help_text, style=INFO_ICON_STYLE),
+        ],
+        style=SECTION_HEADING_ROW_STYLE,
+    )
 
 
 def build_number_field(field_config: InputFieldConfig) -> html.Div:
@@ -134,14 +153,18 @@ def build_number_field(field_config: InputFieldConfig) -> html.Div:
     )
 
 
-def build_fields_group(section_title: str, fields: list[InputFieldConfig]) -> html.Div:
+def build_fields_group(
+    section_title: str, fields: list[InputFieldConfig], help_text: str | None = None
+) -> html.Div:
     return html.Div(
-        [build_section_heading(section_title), *[build_number_field(field) for field in fields]],
+        [build_section_heading(section_title, help_text), *[build_number_field(field) for field in fields]],
         style=SECTION_CONTAINER_STYLE,
     )
 
 
-def build_fields_group_no_divider(section_title: str, fields: list[InputFieldConfig]) -> html.Div:
+def build_fields_group_no_divider(
+    section_title: str, fields: list[InputFieldConfig], help_text: str | None = None
+) -> html.Div:
     no_divider_style = {
         **SECTION_CONTAINER_STYLE,
         "borderBottom": "none",
@@ -149,13 +172,17 @@ def build_fields_group_no_divider(section_title: str, fields: list[InputFieldCon
         "marginBottom": "0",
     }
     return html.Div(
-        [build_section_heading(section_title), *[build_number_field(field) for field in fields]],
+        [build_section_heading(section_title, help_text), *[build_number_field(field) for field in fields]],
         style=no_divider_style,
     )
 
 
 def build_income_expenses_section() -> html.Div:
-    return build_fields_group("Income & Expenses", INCOME_EXPENSES_FIELDS)
+    return build_fields_group(
+        "Income & Expenses",
+        INCOME_EXPENSES_FIELDS,
+        help_text="Income should be monthly take-home pay after tax. Expenses should exclude mortgage payments.",
+    )
 
 
 def build_assets_section() -> html.Div:
@@ -163,13 +190,24 @@ def build_assets_section() -> html.Div:
 
 
 def build_property_section() -> html.Div:
-    return build_fields_group_no_divider("Property & Mortgage", PROPERTY_FIELDS)
+    return build_fields_group_no_divider(
+        "Property & Mortgage",
+        PROPERTY_FIELDS,
+        help_text="Use your current home value, remaining mortgage balance, and remaining term.",
+    )
 
 
 def build_pension_section() -> html.Div:
     return html.Div(
         [
-            build_section_heading("Pension"),
+            build_section_heading(
+                "Pension",
+                help_text=(
+                    "Add your current pension pot and ongoing contribution. "
+                    "Tax relief applies an uplift to the entered contribution."
+                ),
+            ),
+            build_number_field(CURRENT_PENSION_FIELD),
             html.Div(
                 [
                     html.Label("Contribution Type", style=SECTION_HEADING_MARGIN_STYLE),
@@ -193,12 +231,22 @@ def build_pension_section() -> html.Div:
             *[build_number_field(field) for field in PENSION_FIELDS],
             html.Div(
                 [
-                    dcc.Checklist(
-                        id="pension-tax-relief",
-                        options=[{"label": " Include 20% Tax Relief", "value": "yes"}],
-                        value=["yes"],
+                    html.Label("Pension Tax Relief", style=SECTION_HEADING_MARGIN_STYLE),
+                    dcc.RadioItems(
+                        id="pension-tax-relief-rate",
+                        options=[
+                            {"label": " No Relief (0%)", "value": 0},
+                            {"label": " Basic Rate (20%)", "value": 20},
+                            {"label": " Higher Rate (40%)", "value": 40},
+                            {"label": " Additional Rate (45%)", "value": 45},
+                        ],
+                        value=20,
                         style={"marginBottom": "12px"},
-                        labelStyle={"color": LABEL_STYLE["color"]},
+                        labelStyle={
+                            "display": "block",
+                            "marginBottom": "6px",
+                            "color": LABEL_STYLE["color"],
+                        },
                     )
                 ],
                 style={"marginBottom": "12px"},
@@ -237,4 +285,8 @@ def build_forecast_years_section() -> html.Div:
 
 
 def build_forecast_assumptions_section() -> html.Div:
-    return build_fields_group_no_divider("Forecast Assumptions", FORECAST_ADVANCED_FIELDS)
+    return build_fields_group_no_divider(
+        "Forecast Assumptions",
+        FORECAST_ADVANCED_FIELDS,
+        help_text="Annual ISA limit caps how much monthly surplus can be routed into ISA each tax year.",
+    )

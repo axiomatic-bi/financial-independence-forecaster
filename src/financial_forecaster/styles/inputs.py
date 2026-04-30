@@ -73,3 +73,24 @@ SECTION_HEADING_MARGIN_STYLE = {
     "marginBottom": SPACING["sm"],
     "fontSize": TYPOGRAPHY["size_body"],
 }
+
+SECTION_HEADING_ROW_STYLE = {
+    "display": "flex",
+    "alignItems": "center",
+    "gap": SPACING["sm"],
+    "marginBottom": SPACING["lg"],
+}
+
+INFO_ICON_STYLE = {
+    "display": "inline-flex",
+    "alignItems": "center",
+    "justifyContent": "center",
+    "width": "16px",
+    "height": "16px",
+    "borderRadius": "50%",
+    "border": f"1px solid {COLORS['border']}",
+    "color": COLORS["text_secondary"],
+    "fontSize": "11px",
+    "fontWeight": "700",
+    "cursor": "help",
+}
