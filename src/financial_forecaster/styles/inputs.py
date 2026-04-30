@@ -23,10 +23,11 @@ LABEL_STYLE = {
 }
 
 DETAILS_STYLE = {
-    "backgroundColor": COLORS["surface_subtle"],
+    "backgroundColor": "transparent",
     "border": f"1px solid {COLORS['border']}",
     "borderRadius": RADII["sm"],
     "padding": f"{SPACING['md']} {SPACING['md']} 0 {SPACING['md']}",
+    "marginBottom": SPACING["md"],
 }
 
 SUMMARY_STYLE = {

@@ -218,6 +218,7 @@ def build_breakdown_chart(dates, isa_values, non_isa_values, pension_values, hom
             name="ISA Assets",
             line=dict(color=DATA_COLORS[0], width=2, shape="spline", smoothing=0.7),
             stackgroup="one",
+            hovertemplate="%{x}<br>%{fullData.name}: £%{y:,.2f}<extra></extra>",
         )
     )
     chart.add_trace(
@@ -227,6 +228,7 @@ def build_breakdown_chart(dates, isa_values, non_isa_values, pension_values, hom
             name="Non-ISA Assets",
             line=dict(color=DATA_COLORS[1], width=2, shape="spline", smoothing=0.7),
             stackgroup="one",
+            hovertemplate="%{x}<br>%{fullData.name}: £%{y:,.2f}<extra></extra>",
         )
     )
     chart.add_trace(
@@ -236,6 +238,7 @@ def build_breakdown_chart(dates, isa_values, non_isa_values, pension_values, hom
             name="Pension (SIPP)",
             line=dict(color=DATA_COLORS[2], width=2, shape="spline", smoothing=0.7),
             stackgroup="one",
+            hovertemplate="%{x}<br>%{fullData.name}: £%{y:,.2f}<extra></extra>",
         )
     )
     if home_equity_values_for_chart:
@@ -247,6 +250,7 @@ def build_breakdown_chart(dates, isa_values, non_isa_values, pension_values, hom
                 name="Home Equity",
                 line=dict(color=DATA_COLORS[4], width=2, shape="spline", smoothing=0.7),
                 stackgroup="one",
+                hovertemplate="%{x}<br>%{fullData.name}: £%{y:,.2f}<extra></extra>",
             )
         )
     chart.update_layout(
@@ -260,6 +264,7 @@ def build_breakdown_chart(dates, isa_values, non_isa_values, pension_values, hom
         height=400,
         margin={"t": 20, "b": 100},
         xaxis={"tickmode": "array", "tickvals": tick_years},
+        yaxis={"tickprefix": "£", "tickformat": ",.2f"},
         legend=dict(orientation="h", x=0, xanchor="left", y=-0.28, yanchor="top"),
     )
     return chart
@@ -286,6 +291,7 @@ def build_withdrawal_chart(dates, isa_values, expense_values):
             line=dict(color=DATA_COLORS[0], width=2, shape="spline", smoothing=0.7),
             fill="tozeroy",
             fillcolor=hex_to_rgba(DATA_COLORS[0], 0.2),
+            hovertemplate="%{x}<br>%{fullData.name}: £%{y:,.2f}<extra></extra>",
         )
     )
     chart.add_trace(
@@ -294,6 +300,7 @@ def build_withdrawal_chart(dates, isa_values, expense_values):
             y=sampled_expenses,
             name="Annual Expenses (Inflation-Adjusted)",
             line=dict(color=COLORS["danger"], width=2, dash="dash", shape="spline", smoothing=0.7),
+            hovertemplate="%{x}<br>%{fullData.name}: £%{y:,.2f}<extra></extra>",
         )
     )
     chart.update_layout(
@@ -307,6 +314,7 @@ def build_withdrawal_chart(dates, isa_values, expense_values):
         height=400,
         margin={"t": 20, "b": 100},
         xaxis={"tickmode": "array", "tickvals": tick_years},
+        yaxis={"tickprefix": "£", "tickformat": ",.2f"},
         legend=dict(orientation="h", x=0, xanchor="left", y=-0.28, yanchor="top"),
     )
     return chart

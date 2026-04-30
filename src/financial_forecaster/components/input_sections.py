@@ -23,8 +23,12 @@ class InputFieldConfig:
 
 
 INCOME_EXPENSES_FIELDS = [
-    InputFieldConfig(label="Monthly Income (£)", input_id="monthly-income", value=7700),
-    InputFieldConfig(label="Monthly Expenses (£)", input_id="monthly-expenses", value=5000),
+    InputFieldConfig(label="Monthly Income (After Tax) (£)", input_id="monthly-income", value=7700),
+    InputFieldConfig(
+        label="Monthly Expenses (Excluding Mortgage) (£)",
+        input_id="monthly-expenses",
+        value=5000,
+    ),
 ]
 
 ASSET_FIELDS = [
@@ -52,13 +56,13 @@ PROPERTY_FIELDS = [
         input_props={"step": 10000},
     ),
     InputFieldConfig(
-        label="Mortgage Balance (£)",
+        label="Remaining Mortgage Balance (£)",
         input_id="mortgage-balance",
         value=370000,
         input_props={"step": 10000},
     ),
     InputFieldConfig(
-        label="Mortgage Term (Years)",
+        label="Remaining Mortgage Term (Years)",
         input_id="mortgage-term",
         value=30,
         input_props={"step": 1, "min": 0},
@@ -137,6 +141,19 @@ def build_fields_group(section_title: str, fields: list[InputFieldConfig]) -> ht
     )
 
 
+def build_fields_group_no_divider(section_title: str, fields: list[InputFieldConfig]) -> html.Div:
+    no_divider_style = {
+        **SECTION_CONTAINER_STYLE,
+        "borderBottom": "none",
+        "paddingBottom": "0",
+        "marginBottom": "0",
+    }
+    return html.Div(
+        [build_section_heading(section_title), *[build_number_field(field) for field in fields]],
+        style=no_divider_style,
+    )
+
+
 def build_income_expenses_section() -> html.Div:
     return build_fields_group("Income & Expenses", INCOME_EXPENSES_FIELDS)
 
@@ -146,7 +163,7 @@ def build_assets_section() -> html.Div:
 
 
 def build_property_section() -> html.Div:
-    return build_fields_group("Property & Mortgage", PROPERTY_FIELDS)
+    return build_fields_group_no_divider("Property & Mortgage", PROPERTY_FIELDS)
 
 
 def build_pension_section() -> html.Div:
@@ -187,7 +204,12 @@ def build_pension_section() -> html.Div:
                 style={"marginBottom": "12px"},
             ),
         ],
-        style=SECTION_CONTAINER_STYLE,
+        style={
+            **SECTION_CONTAINER_STYLE,
+            "borderBottom": "none",
+            "paddingBottom": "0",
+            "marginBottom": "0",
+        },
     )
 
 
@@ -215,4 +237,4 @@ def build_forecast_years_section() -> html.Div:
 
 
 def build_forecast_assumptions_section() -> html.Div:
-    return build_fields_group("Forecast Assumptions", FORECAST_ADVANCED_FIELDS)
+    return build_fields_group_no_divider("Forecast Assumptions", FORECAST_ADVANCED_FIELDS)
