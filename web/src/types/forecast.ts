@@ -22,6 +22,7 @@ export interface ForecastInputs {
   pensionTaxReliefRate: number;
   inflationRate: number;
   wageIncreaseRate: number;
+  extractionRate: number;
 }
 
 export interface ForecastResult {
@@ -61,6 +62,7 @@ export interface ForecastResult {
   fi_date: string | null;
   fi_month_index: number | null;
   fi_evaluation_end_month: number;
+  extraction_rate: number;
 }
 
 export interface TableRow {

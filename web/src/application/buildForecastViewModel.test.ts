@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
 import fixtureData from '../fixtures/forecast-fixtures.json';
+import { UK_BASELINE_DEFAULTS } from '../domain/ukBaseline';
 import { buildForecastViewModel, defaultInputs } from './buildForecastViewModel';
 
 interface ScenarioFixture {
@@ -38,9 +39,16 @@ const mapFixtureInputs = (inputs: Record<string, number | string>) => ({
   pensionTaxReliefRate: Number(inputs.pension_tax_relief_rate),
   inflationRate: Number(inputs.inflation_rate),
   wageIncreaseRate: Number(inputs.wage_increase_rate),
+  extractionRate: 3.9,
 });
 
 describe('buildForecastViewModel parity', () => {
+  it('uses centralized UK baseline defaults for income and expenses', () => {
+    expect(defaultInputs.income).toBe(UK_BASELINE_DEFAULTS.monthlyIncomeAfterTax);
+    expect(defaultInputs.expenses).toBe(UK_BASELINE_DEFAULTS.monthlyExpensesExMortgage);
+    expect(defaultInputs.income).toBeGreaterThan(defaultInputs.expenses);
+  });
+
   it('matches scalar outputs for baseline fixtures', () => {
     for (const scenario of scenarios) {
       const vm = buildForecastViewModel(mapFixtureInputs(scenario.scenario.inputs));
@@ -65,6 +73,10 @@ describe('buildForecastViewModel parity', () => {
     expect(vm.yearlyLabels.length).toBeGreaterThan(0);
     expect(vm.assetSeries.length).toBe(4);
     expect(vm.withdrawalSeries.length).toBe(2);
+    expect(vm.kpis[0].value).toMatch(/^£/);
+    expect(vm.kpis[0].value).not.toContain('NaN');
+    expect(vm.kpis[3].value).toMatch(/%$/);
+    expect(vm.kpis[3].value).not.toContain('NaN');
     expect(vm.financeRows[0].values.length).toBe(6);
     expect(vm.netWorthRows[vm.netWorthRows.length - 1].isTotal).toBe(true);
   });

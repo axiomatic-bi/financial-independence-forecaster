@@ -1,10 +1,14 @@
 import { calculateForecast } from '../domain/forecast';
+import { UK_BASELINE_DEFAULTS } from '../domain/ukBaseline';
 import type { ForecastInputs, ForecastResult, ForecastViewModel, TableRow } from '../types/forecast';
 
 const TIMEPOINTS_YEARS = [0, 1, 5, 10, 20];
 
-const currency = (value: number): string => `£${value.toLocaleString(undefined, { maximumFractionDigits: 0 })}`;
-const percent = (value: number): string => `${value.toFixed(1)}%`;
+const finiteOrZero = (value: number): number => (Number.isFinite(value) ? value : 0);
+
+const currency = (value: number): string => `£${finiteOrZero(value).toLocaleString(undefined, { maximumFractionDigits: 0 })}`;
+const percent = (value: number): string => `${finiteOrZero(value).toFixed(1)}%`;
+const extractionRateLabel = (value: number): string => `${finiteOrZero(value).toFixed(1)}%`;
 
 const safeValue = (values: number[], index: number): number => {
   if (!values.length) return 0;
@@ -90,6 +94,7 @@ export const normalizeInputs = (inputs: ForecastInputs): ForecastInputs => ({
   inflationRate: inputs.inflationRate || 2.0,
   wageIncreaseRate: inputs.wageIncreaseRate || 3.0,
   isaAnnualContribution: inputs.isaAnnualContribution || 40000,
+  extractionRate: inputs.extractionRate || 3.9,
 });
 
 export const buildForecastViewModel = (rawInputs: ForecastInputs): ForecastViewModel => {
@@ -117,15 +122,17 @@ export const buildForecastViewModel = (rawInputs: ForecastInputs): ForecastViewM
     inflationRate: inputs.inflationRate,
     wageIncreaseRate: inputs.wageIncreaseRate,
     isaAnnualContribution: inputs.isaAnnualContribution,
+    extractionRate: inputs.extractionRate,
   });
   const fiIndex = result.fi_month_index ?? Math.max(result.isa_values.length - 1, 0);
-  const fiIsa = result.isa_values[fiIndex];
-  const fiNonIsa = result.non_isa_values[fiIndex];
-  const fiIncome = result.income_values[fiIndex];
-  const fiSavings = result.monthly_savings_values[fiIndex];
+  const fiIsa = safeValue(result.isa_values, fiIndex);
+  const fiNonIsa = safeValue(result.non_isa_values, fiIndex);
+  const fiIncome = safeValue(result.income_values, fiIndex);
+  const fiSavings = safeValue(result.monthly_savings_values, fiIndex);
   const fiNonIsaTaxFree = Math.min(fiNonIsa, 3000);
   const fiNonIsaTaxed = Math.max(0, fiNonIsa - 3000);
-  const fiWithdrawalAnnual = fiIsa * 0.039 + fiNonIsaTaxFree * 0.039 + fiNonIsaTaxed * 0.039 * 0.76;
+  const extractionRate = result.extraction_rate / 100;
+  const fiWithdrawalAnnual = fiIsa * extractionRate + fiNonIsaTaxFree * extractionRate + fiNonIsaTaxed * extractionRate * 0.76;
   const fiSavingsRate = fiIncome > 0 ? (fiSavings / fiIncome) * 100 : 0;
   const yearsText = result.years_until_expenses_covered === null ? 'Never' : `${result.years_until_expenses_covered.toFixed(1)}`;
 
@@ -144,16 +151,19 @@ export const buildForecastViewModel = (rawInputs: ForecastInputs): ForecastViewM
 
   const extendedExpenses = extendSeriesToYearEnd(result.dates, result.expense_values);
   const withdrawalSeries = [
-    { name: '3.9% Annual Withdrawal', values: sample(extendedIsa.values.map((v) => v * 0.039), indices) },
+    {
+      name: `${extractionRateLabel(result.extraction_rate)} Annual Withdrawal`,
+      values: sample(extendedIsa.values.map((v) => v * extractionRate), indices),
+    },
     { name: 'Annual Expenses (Inflation-Adjusted)', values: sample(extendedExpenses.values.map((v) => v * 12), indices) },
   ];
 
   return {
     kpis: [
-      { label: '3.9% Withdrawal', value: currency(fiWithdrawalAnnual) },
       { label: 'FI Date', value: result.fi_date ?? 'Not reached' },
       { label: 'Years Until FI', value: yearsText },
-      { label: 'Savings Rate', value: percent(fiSavingsRate) },
+      { label: `Passive Income at FI (${extractionRateLabel(result.extraction_rate)})`, value: currency(fiWithdrawalAnnual) },
+      { label: 'Savings Rate at FI', value: percent(fiSavingsRate) },
     ],
     yearlyLabels,
     assetSeries,
@@ -165,8 +175,8 @@ export const buildForecastViewModel = (rawInputs: ForecastInputs): ForecastViewM
 };
 
 export const defaultInputs: ForecastInputs = {
-  income: 0,
-  expenses: 0,
+  income: UK_BASELINE_DEFAULTS.monthlyIncomeAfterTax,
+  expenses: UK_BASELINE_DEFAULTS.monthlyExpensesExMortgage,
   isaAssets: 0,
   isaRate: 7,
   nonIsaAssets: 0,
@@ -186,4 +196,5 @@ export const defaultInputs: ForecastInputs = {
   pensionTaxReliefRate: 20,
   inflationRate: 2,
   wageIncreaseRate: 3,
+  extractionRate: 3.9,
 };

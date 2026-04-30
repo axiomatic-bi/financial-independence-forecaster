@@ -1,8 +1,13 @@
 import type { ForecastResult, PensionType } from '../types/forecast';
 
 const FI_EVALUATION_MONTHS = 40 * 12;
+const DEFAULT_EXTRACTION_RATE = 3.9;
 
 const orZero = (value: number | null | undefined): number => value ?? 0;
+const calculateAnnualWithdrawal = (isa: number, nonIsa: number, extractionRatePercent: number): number => {
+  const extractionRate = extractionRatePercent / 100;
+  return isa * extractionRate + Math.min(nonIsa, 3000) * extractionRate + Math.max(0, nonIsa - 3000) * extractionRate * 0.76;
+};
 
 const addMonths = (baseDate: Date, months: number): Date => {
   const date = new Date(baseDate);
@@ -173,6 +178,7 @@ export const calculateForecast = (input: {
   inflationRate?: number;
   wageIncreaseRate?: number;
   isaAnnualContribution?: number;
+  extractionRate?: number;
 }): ForecastResult => {
   const income = orZero(input.income);
   const expenses = orZero(input.expenses);
@@ -196,6 +202,7 @@ export const calculateForecast = (input: {
   const inflationRate = orZero(input.inflationRate ?? 2);
   const wageIncreaseRate = orZero(input.wageIncreaseRate ?? 3);
   const isaAnnualContribution = orZero(input.isaAnnualContribution ?? 40000);
+  const extractionRate = orZero(input.extractionRate ?? DEFAULT_EXTRACTION_RATE);
 
   let mortgageMonthsRemaining = mortgageTerm ? Math.trunc(mortgageTerm * 12) : 0;
   const monthlyMortgagePayment = calculateMortgagePayment(
@@ -297,10 +304,7 @@ export const calculateForecast = (input: {
     }
 
     if (yearsUntilCovered === null) {
-      const annualWithdrawal =
-        currentIsa * 0.039 +
-        Math.min(currentNonIsa, 3000) * 0.039 +
-        Math.max(0, currentNonIsa - 3000) * 0.039 * 0.76;
+      const annualWithdrawal = calculateAnnualWithdrawal(currentIsa, currentNonIsa, extractionRate);
       const annualExpenses = currentExpenses * 12;
       if (annualWithdrawal >= annualExpenses) {
         yearsUntilCovered = month / 12;
@@ -315,10 +319,7 @@ export const calculateForecast = (input: {
   const totalGain = finalWealth - (isaAssets + nonIsaAssets);
   const finalIsa = isaValues.length ? isaValues[isaValues.length - 1] : 0;
   const finalNonIsa = nonIsaValues.length ? nonIsaValues[nonIsaValues.length - 1] : 0;
-  const finalNonIsaTaxFree = Math.min(finalNonIsa, 3000);
-  const finalNonIsaTaxed = Math.max(0, finalNonIsa - 3000);
-  const withdrawal39Annual =
-    finalIsa * 0.039 + finalNonIsaTaxFree * 0.039 + finalNonIsaTaxed * 0.039 * 0.76;
+  const withdrawal39Annual = calculateAnnualWithdrawal(finalIsa, finalNonIsa, extractionRate);
   const finalMonthlyExpenses = expenseValues.length ? expenseValues[expenseValues.length - 1] : expenses;
   const finalAnnualExpenses = finalMonthlyExpenses * 12;
 
@@ -359,5 +360,6 @@ export const calculateForecast = (input: {
     fi_date: fiDate,
     fi_month_index: fiMonthIndex,
     fi_evaluation_end_month: fiEvaluationEndMonth,
+    extraction_rate: extractionRate,
   };
 };
