@@ -6,6 +6,7 @@ from dash import html
 from financial_forecaster.callbacks import register_callbacks
 from financial_forecaster.components.charts import create_charts_section, create_summary_stats
 from financial_forecaster.components.inputs import create_forecast_period_section, create_input_panel
+from financial_forecaster.styles.inputs import SECTION_TITLE_STYLE
 from financial_forecaster.theme import COLORS, SPACING, TYPOGRAPHY
 
 APP_ROOT = Path(__file__).resolve().parents[2]
@@ -58,26 +59,30 @@ header = html.Div(
 
 main_column = html.Div(
     [
-        html.Div([create_summary_stats(full_bleed=True)], className="summary-main-band"),
         html.Div(
             [
                 html.H3(
                     "PROJECTED OUTCOMES",
-                    style={
-                        "fontSize": TYPOGRAPHY["size_section_label"],
-                        "color": COLORS["text_secondary"],
-                        "margin": f"0 0 {SPACING['md']} 0",
-                        "textTransform": "uppercase",
-                        "letterSpacing": TYPOGRAPHY["tracking_label"],
-                        "fontWeight": "600",
-                    },
+                    style=SECTION_TITLE_STYLE,
                 ),
-                create_forecast_period_section(),
                 html.Div(id="projected-stats"),
             ],
             className="projected-main-band",
         ),
-        html.Div([create_charts_section()], style={"padding": SPACING["xxl"]}, className="app-main-content"),
+        html.Div(
+            [create_forecast_period_section()],
+            className="forecast-period-band",
+        ),
+        html.Div(
+            [create_charts_section()],
+            style={"padding": f"{SPACING['lg']} {SPACING['xxl']}"},
+            className="app-main-content",
+        ),
+        html.Div(
+            [create_summary_stats(full_bleed=True)],
+            style={"padding": f"{SPACING['lg']} {SPACING['xxl']}"},
+            className="app-main-content",
+        ),
     ],
     style={"flex": "1", "minWidth": "0", "display": "flex", "flexDirection": "column"},
     className="app-main-column",

@@ -152,6 +152,8 @@ def calculate_forecast(
     monthly_savings_values = []
     mortgage_balance_values = []
     home_equity_values = []
+    income_values = []
+    mortgage_payment_values = []
 
     current_isa = isa_assets
     current_non_isa = non_isa_assets
@@ -163,6 +165,8 @@ def calculate_forecast(
     current_home_equity = max(0, home_value - current_mortgage_balance)
 
     years_until_covered = None
+    fi_date = None
+    fi_month_index = None
     fi_evaluation_end_month = max(months, FI_EVALUATION_MONTHS)
 
     for month in range(fi_evaluation_end_month + 1):
@@ -209,15 +213,18 @@ def calculate_forecast(
             mortgage_months_remaining -= 1
 
         current_home_equity = max(0, home_value - current_mortgage_balance)
+        current_mortgage_payment = monthly_mortgage_payment if mortgage_months_remaining > 0 else 0
 
         if month <= months:
             isa_values.append(current_isa)
             non_isa_values.append(current_non_isa)
             pension_values.append(current_pension)
             expense_values.append(current_expenses)
+            income_values.append(current_income)
             monthly_savings_values.append(month_result["savings"])
             mortgage_balance_values.append(current_mortgage_balance)
             home_equity_values.append(current_home_equity)
+            mortgage_payment_values.append(current_mortgage_payment)
 
             total_wealth_with_equity = (
                 current_isa + current_non_isa + current_pension + current_home_equity
@@ -233,6 +240,8 @@ def calculate_forecast(
             month_annual_expenses = current_expenses * 12
             if annual_withdrawal >= month_annual_expenses:
                 years_until_covered = month / 12
+                fi_date = date.strftime("%Y-%m")
+                fi_month_index = month
 
     final_wealth = total_wealth[-1]
     final_pension = pension_values[-1]
@@ -275,11 +284,16 @@ def calculate_forecast(
         "final_monthly_expenses": final_monthly_expenses,
         "final_annual_expenses": final_annual_expenses,
         "expense_values": expense_values,
+        "income_values": income_values,
         "mortgage_balance_values": mortgage_balance_values,
+        "mortgage_payment_values": mortgage_payment_values,
         "home_equity_values": home_equity_values,
         "home_value": home_value,
         "final_mortgage_balance": current_mortgage_balance,
         "final_home_equity": current_home_equity,
         "monthly_mortgage_payment": monthly_mortgage_payment,
         "mortgage_interest_rate": mortgage_interest_rate,
+        "fi_date": fi_date,
+        "fi_month_index": fi_month_index,
+        "fi_evaluation_end_month": fi_evaluation_end_month,
     }

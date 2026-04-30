@@ -195,7 +195,6 @@ def build_pension_section() -> html.Div:
 def build_forecast_years_section() -> html.Div:
     return html.Div(
         [
-            build_section_heading("Forecast Settings"),
             html.Div(
                 [
                     html.Label("Forecast Period (Years)", style=SECTION_HEADING_MARGIN_STYLE),
@@ -209,10 +208,10 @@ def build_forecast_years_section() -> html.Div:
                         tooltip={"placement": "bottom", "always_visible": True},
                     ),
                 ],
-                style={"marginBottom": "16px"},
+                style={"marginBottom": "0"},
             ),
         ],
-        style=SECTION_CONTAINER_STYLE,
+        style={"paddingBottom": "0", "marginBottom": "0"},
     )
 
 

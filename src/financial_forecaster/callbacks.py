@@ -1,11 +1,9 @@
-from dash import Input, Output, State
+from dash import Input, Output
 
 from financial_forecaster.components.charts import (
     build_breakdown_chart,
     build_projected_stats,
-    build_savings_chart,
     build_summary_stats,
-    build_wealth_chart,
     build_withdrawal_chart,
 )
 from financial_forecaster.forecast import calculate_forecast
@@ -18,8 +16,6 @@ def register_callbacks(app):
         [
             Output("summary-stats", "children"),
             Output("projected-stats", "children"),
-            Output("wealth-forecast-chart", "figure"),
-            Output("monthly-savings-chart", "figure"),
             Output("asset-breakdown-chart", "figure"),
             Output("withdrawal-chart", "figure"),
         ],
@@ -95,44 +91,47 @@ def register_callbacks(app):
         summary = build_summary_stats(
             forecast_data["income"],
             forecast_data["expenses"],
-            forecast_data["monthly_pension"],
             forecast_data["monthly_savings"],
-            forecast_data["inflation_rate"],
-            forecast_data["wage_increase_rate"],
             forecast_data["isa_assets"],
             forecast_data["non_isa_assets"],
-            forecast_data["final_wealth"],
-            forecast_data["final_pension"],
-            forecast_data["total_gain"],
-            forecast_data["months"],
-            withdrawal_39_annual=forecast_data["withdrawal_39_annual"],
-            final_isa=forecast_data["final_isa"],
-            years_until_expenses_covered=forecast_data["years_until_expenses_covered"],
-            final_monthly_expenses=forecast_data["final_monthly_expenses"],
-            final_annual_expenses=forecast_data["final_annual_expenses"],
-            home_value=forecast_data["home_value"],
             current_home_equity=max((home_value or 0) - (mortgage_balance or 0), 0),
-            final_home_equity=forecast_data["final_home_equity"],
-            final_mortgage_balance=forecast_data["final_mortgage_balance"],
             monthly_mortgage_payment=forecast_data["monthly_mortgage_payment"],
-            mortgage_interest_rate=forecast_data["mortgage_interest_rate"],
+            income_values=forecast_data["income_values"],
+            expense_values=forecast_data["expense_values"],
+            monthly_savings_values=forecast_data["monthly_savings_values"],
+            mortgage_payment_values=forecast_data["mortgage_payment_values"],
+            isa_values=forecast_data["isa_values"],
+            non_isa_values=forecast_data["non_isa_values"],
+            pension_values=forecast_data["pension_values"],
+            home_equity_values=forecast_data["home_equity_values"],
+            fi_month_index=forecast_data["fi_month_index"],
         )
+
+        fi_month_index = (
+            forecast_data["fi_month_index"]
+            if forecast_data["fi_month_index"] is not None
+            else max(len(forecast_data["isa_values"]) - 1, 0)
+        )
+        fi_isa = forecast_data["isa_values"][fi_month_index]
+        fi_non_isa = forecast_data["non_isa_values"][fi_month_index]
+        fi_income = forecast_data["income_values"][fi_month_index]
+        fi_savings = forecast_data["monthly_savings_values"][fi_month_index]
+        fi_non_isa_tax_free = min(fi_non_isa, 3000)
+        fi_non_isa_taxed = max(0, fi_non_isa - 3000)
+        fi_withdrawal_39_annual = (
+            (fi_isa * 0.039)
+            + (fi_non_isa_tax_free * 0.039)
+            + (fi_non_isa_taxed * 0.039 * 0.76)
+        )
+        fi_savings_rate = (fi_savings / fi_income * 100) if fi_income > 0 else 0
 
         projected = build_projected_stats(
-            forecast_data["final_wealth"],
-            forecast_data["final_pension"],
-            forecast_data["final_isa"],
             forecast_data["years_until_expenses_covered"],
-            forecast_data["final_monthly_expenses"],
-            forecast_data["withdrawal_39_annual"],
-            forecast_data["home_value"],
-            forecast_data["final_home_equity"],
+            forecast_data["fi_date"],
+            fi_withdrawal_39_annual,
+            fi_savings_rate,
         )
 
-        wealth_chart = build_wealth_chart(forecast_data["dates"], forecast_data["total_wealth"])
-        savings_chart = build_savings_chart(
-            forecast_data["dates"], forecast_data["monthly_savings_values"]
-        )
         breakdown_chart = build_breakdown_chart(
             forecast_data["dates"],
             forecast_data["isa_values"],
@@ -147,8 +146,6 @@ def register_callbacks(app):
         return (
             summary,
             projected,
-            wealth_chart,
-            savings_chart,
             breakdown_chart,
             withdrawal_chart,
         )
