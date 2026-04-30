@@ -82,8 +82,13 @@ describe('buildForecastViewModel parity', () => {
     expect(savingsRateKpi?.value).toMatch(/%$/);
     expect(savingsRateKpi?.value).not.toContain('NaN');
     expect(vm.financeRows[0].values.length).toBe(6);
-    expect(vm.financeRows[vm.financeRows.length - 1]?.label).toBe('Liquid Runway (Years)');
-    expect(vm.financeRows[vm.financeRows.length - 1]?.values.length).toBe(6);
+    const monthlySavingsRow = vm.financeRows.find((row) => row.label === 'Monthly Savings');
+    expect(monthlySavingsRow?.values.length).toBe(6);
+    expect(vm.fiHealthRows.length).toBe(2);
+    expect(vm.fiHealthRows[0]?.label).toBe('Liquid Runway (Years)');
+    expect(vm.fiHealthRows[1]?.label).toBe('FI Coverage Ratio');
+    expect(vm.fiHealthRows[0]?.values.length).toBe(6);
+    expect(vm.fiHealthRows[1]?.values.length).toBe(6);
     const totalRowIndex = vm.netWorthRows.findIndex((row) => row.label === 'Total Net Worth');
     expect(totalRowIndex).toBeGreaterThanOrEqual(0);
     expect(vm.netWorthRows[totalRowIndex].isTotal).toBe(true);

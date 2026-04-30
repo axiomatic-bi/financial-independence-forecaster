@@ -3,6 +3,7 @@ import { UK_BASELINE_DEFAULTS } from '../domain/ukBaseline';
 import type { ForecastInputs, ForecastResult, ForecastViewModel, TableRow } from '../types/forecast';
 
 const TIMEPOINTS_YEARS = [0, 1, 5, 10, 20];
+const FI_EVALUATION_MONTHS = 40 * 12;
 const UK_CGT_ANNUAL_EXEMPT_AMOUNT = 3000;
 const UK_CGT_BASIC_RATE = 0.18;
 
@@ -12,6 +13,7 @@ const currency = (value: number): string => `£${finiteOrZero(value).toLocaleStr
 const percent = (value: number): string => `${finiteOrZero(value).toFixed(1)}%`;
 const extractionRateLabel = (value: number): string => `${finiteOrZero(value).toFixed(1)}%`;
 const years = (value: number): string => `${finiteOrZero(value).toFixed(1)}y`;
+const ratio = (value: number): string => `${finiteOrZero(value).toFixed(2)}x`;
 
 const safeValue = (values: number[], index: number): number => {
   if (!values.length) return 0;
@@ -67,12 +69,18 @@ const buildFinanceRows = (result: ForecastResult): TableRow[] => {
     ['Monthly Mortgage Repayments', result.mortgage_payment_values],
     ['Monthly Savings', result.monthly_savings_values],
   ];
-  const rows = metrics.map(([label, series]) => ({
+  return metrics.map(([label, series]) => ({
     label,
     values: [...TIMEPOINTS_YEARS.map((y) => currency(safeValue(series, monthFromYears(y, maxMonth)))), currency(safeValue(series, fiMonth))],
   }));
+};
 
-  const liquidRunwayValues = [...TIMEPOINTS_YEARS, -1].map((year) => {
+const buildFiHealthRows = (result: ForecastResult): TableRow[] => {
+  const maxMonth = result.income_values.length - 1;
+  const fiMonth = result.fi_month_index ?? maxMonth;
+  const checkpoints = [...TIMEPOINTS_YEARS, -1];
+
+  const liquidRunwayValues = checkpoints.map((year) => {
     const monthIndex = year === -1 ? fiMonth : monthFromYears(year, maxMonth);
     const liquidAssets = safeValue(result.isa_values, monthIndex) + safeValue(result.non_isa_values, monthIndex);
     const annualSpend =
@@ -83,7 +91,24 @@ const buildFinanceRows = (result: ForecastResult): TableRow[] => {
     return years(liquidAssets / annualSpend);
   });
 
-  return [...rows, { label: 'Liquid Runway (Years)', values: liquidRunwayValues }];
+  const fiCoverageRatioValues = checkpoints.map((year) => {
+    const monthIndex = year === -1 ? fiMonth : monthFromYears(year, maxMonth);
+    const isaValue = safeValue(result.isa_values, monthIndex);
+    const nonIsaValue = safeValue(result.non_isa_values, monthIndex);
+    const nonIsaCostBasis = safeValue(result.non_isa_cost_basis_values, monthIndex);
+    const annualWithdrawal = isaValue * (result.extraction_rate / 100) + calculateNonIsaNetWithdrawal(nonIsaValue, nonIsaCostBasis, result.extraction_rate);
+    const annualSpend =
+      (safeValue(result.expense_values, monthIndex) + safeValue(result.mortgage_payment_values, monthIndex)) * 12;
+    if (annualSpend <= 0) {
+      return annualWithdrawal > 0 ? 'Infinite' : '0.00x';
+    }
+    return ratio(annualWithdrawal / annualSpend);
+  });
+
+  return [
+    { label: 'Liquid Runway (Years)', values: liquidRunwayValues },
+    { label: 'FI Coverage Ratio', values: fiCoverageRatioValues },
+  ];
 };
 
 const buildNetWorthRows = (result: ForecastResult): TableRow[] => {
@@ -141,14 +166,15 @@ export const normalizeInputs = (inputs: ForecastInputs): ForecastInputs => ({
 
 export const buildForecastViewModel = (rawInputs: ForecastInputs): ForecastViewModel => {
   const inputs = normalizeInputs(rawInputs);
-  const result = calculateForecast({
+  const chartMonths = inputs.forecastYears * 12;
+  const chartResult = calculateForecast({
     income: inputs.income,
     expenses: inputs.expenses,
     isaAssets: inputs.isaAssets,
     isaRate: inputs.isaRate,
     nonIsaAssets: inputs.nonIsaAssets,
     nonIsaRate: inputs.nonIsaRate,
-    months: inputs.forecastYears * 12,
+    months: chartMonths,
     homeValue: inputs.homeValue,
     mortgageBalance: inputs.mortgageBalance,
     mortgageTerm: inputs.mortgageTerm,
@@ -168,23 +194,52 @@ export const buildForecastViewModel = (rawInputs: ForecastInputs): ForecastViewM
     isaAnnualContribution: inputs.isaAnnualContribution,
     extractionRate: inputs.extractionRate,
   });
-  const fiIndex = result.fi_month_index ?? Math.max(result.isa_values.length - 1, 0);
-  const fiIsa = safeValue(result.isa_values, fiIndex);
-  const fiNonIsa = safeValue(result.non_isa_values, fiIndex);
-  const fiIncome = safeValue(result.income_values, fiIndex);
-  const fiSavings = safeValue(result.monthly_savings_values, fiIndex);
-  const fiNonIsaCostBasis = safeValue(result.non_isa_cost_basis_values, fiIndex);
-  const extractionRate = result.extraction_rate / 100;
+  const fiResult = calculateForecast({
+    income: inputs.income,
+    expenses: inputs.expenses,
+    isaAssets: inputs.isaAssets,
+    isaRate: inputs.isaRate,
+    nonIsaAssets: inputs.nonIsaAssets,
+    nonIsaRate: inputs.nonIsaRate,
+    months: FI_EVALUATION_MONTHS,
+    homeValue: inputs.homeValue,
+    mortgageBalance: inputs.mortgageBalance,
+    mortgageTerm: inputs.mortgageTerm,
+    mortgageInterestRate: inputs.mortgageInterestRate,
+    homeAppreciationRate: inputs.homeAppreciationRate,
+    pensionAssets: inputs.pensionAssets,
+    pensionContribution: inputs.pensionContribution,
+    employerPensionContributionRate: inputs.employerPensionContributionRate,
+    pensionType: inputs.pensionType,
+    pensionRate: inputs.pensionType === 'percentage' ? inputs.pensionContribution : 5.0,
+    pensionInterestRate: inputs.pensionInterestRate,
+    pensionTaxReliefRate: inputs.pensionTaxReliefRate,
+    pensionableMonthlyPay: inputs.pensionableMonthlyPay,
+    sippContribution: inputs.sippContribution,
+    inflationRate: inputs.inflationRate,
+    wageIncreaseRate: inputs.wageIncreaseRate,
+    isaAnnualContribution: inputs.isaAnnualContribution,
+    extractionRate: inputs.extractionRate,
+  });
+  const fiIndex = fiResult.fi_month_index ?? Math.max(fiResult.isa_values.length - 1, 0);
+  const fiIsa = safeValue(fiResult.isa_values, fiIndex);
+  const fiNonIsa = safeValue(fiResult.non_isa_values, fiIndex);
+  const fiIncome = safeValue(fiResult.income_values, fiIndex);
+  const fiSavings = safeValue(fiResult.monthly_savings_values, fiIndex);
+  const fiNonIsaCostBasis = safeValue(fiResult.non_isa_cost_basis_values, fiIndex);
+  const extractionRate = fiResult.extraction_rate / 100;
   const fiWithdrawalAnnual =
-    fiIsa * extractionRate + calculateNonIsaNetWithdrawal(fiNonIsa, fiNonIsaCostBasis, result.extraction_rate);
+    fiIsa * extractionRate + calculateNonIsaNetWithdrawal(fiNonIsa, fiNonIsaCostBasis, fiResult.extraction_rate);
   const fiSavingsRate = fiIncome > 0 ? (fiSavings / fiIncome) * 100 : 0;
-  const yearsText = result.years_until_expenses_covered === null ? 'Never' : `${result.years_until_expenses_covered.toFixed(1)}`;
+  const yearsText = fiResult.years_until_expenses_covered === null ? 'Never' : `${fiResult.years_until_expenses_covered.toFixed(1)}`;
 
-  const extendedIsa = extendSeriesToYearEnd(result.dates, result.isa_values);
-  const extendedNonIsa = extendSeriesToYearEnd(result.dates, result.non_isa_values);
-  const extendedPension = extendSeriesToYearEnd(result.dates, result.pension_values);
-  const extendedHome = extendSeriesToYearEnd(result.dates, result.home_equity_values);
-  const indices = yearEndIndices(extendedIsa.dates);
+  const extendedIsa = extendSeriesToYearEnd(chartResult.dates, chartResult.isa_values);
+  const extendedNonIsa = extendSeriesToYearEnd(chartResult.dates, chartResult.non_isa_values);
+  const extendedPension = extendSeriesToYearEnd(chartResult.dates, chartResult.pension_values);
+  const extendedHome = extendSeriesToYearEnd(chartResult.dates, chartResult.home_equity_values);
+  const chartLimitIndex = Math.min(chartMonths, Math.max(extendedIsa.dates.length - 1, 0));
+  const chartDates = extendedIsa.dates.slice(0, chartLimitIndex + 1);
+  const indices = yearEndIndices(chartDates);
   const yearlyLabels = indices.map((i) => extendedIsa.dates[i].slice(0, 4));
   const assetSeries = [
     { name: 'ISA Assets', values: sample(extendedIsa.values, indices) },
@@ -193,15 +248,15 @@ export const buildForecastViewModel = (rawInputs: ForecastInputs): ForecastViewM
     { name: 'Home Equity', values: sample(extendedHome.values, indices) },
   ];
 
-  const extendedExpenses = extendSeriesToYearEnd(result.dates, result.expense_values);
+  const extendedExpenses = extendSeriesToYearEnd(chartResult.dates, chartResult.expense_values);
   const withdrawalSeries = [
     {
-      name: `${extractionRateLabel(result.extraction_rate)} Annual Withdrawal`,
+      name: `${extractionRateLabel(chartResult.extraction_rate)} Annual Withdrawal`,
       values: indices.map((index) => {
         const isaValue = extendedIsa.values[index] ?? 0;
         const nonIsaValue = extendedNonIsa.values[index] ?? 0;
-        const nonIsaCostBasis = safeValue(result.non_isa_cost_basis_values, index);
-        return isaValue * extractionRate + calculateNonIsaNetWithdrawal(nonIsaValue, nonIsaCostBasis, result.extraction_rate);
+        const nonIsaCostBasis = safeValue(chartResult.non_isa_cost_basis_values, index);
+        return isaValue * (chartResult.extraction_rate / 100) + calculateNonIsaNetWithdrawal(nonIsaValue, nonIsaCostBasis, chartResult.extraction_rate);
       }),
     },
     { name: 'Annual Expenses (Inflation-Adjusted)', values: sample(extendedExpenses.values.map((v) => v * 12), indices) },
@@ -209,17 +264,18 @@ export const buildForecastViewModel = (rawInputs: ForecastInputs): ForecastViewM
 
   return {
     kpis: [
-      { label: 'FI Date', value: result.fi_date ?? 'Not reached' },
+      { label: 'FI Date', value: fiResult.fi_date ?? 'Not reached' },
       { label: 'Years Until FI', value: yearsText },
-      { label: `Passive Income at FI (${extractionRateLabel(result.extraction_rate)})`, value: currency(fiWithdrawalAnnual) },
+      { label: `Passive Income at FI (${extractionRateLabel(fiResult.extraction_rate)})`, value: currency(fiWithdrawalAnnual) },
       { label: 'Savings Rate at FI', value: percent(fiSavingsRate) },
     ],
     yearlyLabels,
     assetSeries,
     withdrawalSeries,
-    financeRows: buildFinanceRows(result),
-    netWorthRows: buildNetWorthRows(result),
-    raw: result,
+    financeRows: buildFinanceRows(fiResult),
+    netWorthRows: buildNetWorthRows(fiResult),
+    fiHealthRows: buildFiHealthRows(fiResult),
+    raw: chartResult,
   };
 };
 

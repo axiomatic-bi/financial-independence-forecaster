@@ -84,6 +84,19 @@ const kpiTooltipText = (label: string, extractionRate: number): string | null =>
   return null;
 };
 const INPUTS_STORAGE_KEY = 'financial-forecaster:inputs';
+const formatCompactCurrency = (value: number): string => {
+  if (!Number.isFinite(value)) {
+    return '£0';
+  }
+  if (Math.abs(value) < 1000) {
+    return `£${Math.round(value).toLocaleString()}`;
+  }
+  const compact = new Intl.NumberFormat('en-GB', {
+    notation: 'compact',
+    maximumFractionDigits: 1,
+  }).format(value);
+  return `£${compact}`;
+};
 const renderAssetTooltip = ({
   active,
   payload,
@@ -105,13 +118,13 @@ const renderAssetTooltip = ({
           <span className="chart-tooltip-dot" style={{ backgroundColor: item.color ?? '#c0ccec' }} />
           <span>{String(item.name ?? '')}</span>
           <strong>
-            £{Math.round(Number(item.value ?? 0)).toLocaleString()} ({total > 0 ? ((Number(item.value ?? 0) / total) * 100).toFixed(1) : '0.0'}%)
+            {formatCompactCurrency(Number(item.value ?? 0))} ({total > 0 ? ((Number(item.value ?? 0) / total) * 100).toFixed(1) : '0.0'}%)
           </strong>
         </p>
       ))}
       <p className="chart-tooltip-row chart-tooltip-total">
         <span>Total</span>
-        <strong>£{Math.round(total).toLocaleString()}</strong>
+        <strong>{formatCompactCurrency(total)}</strong>
       </p>
     </div>
   );
@@ -217,7 +230,7 @@ export const ForecasterApp = () => {
     withdrawal: vm.withdrawalSeries[0]?.values[i] ?? 0,
     expenses: vm.withdrawalSeries[1]?.values[i] ?? 0,
   }));
-  const formatCurrencyTick = (value: number) => `£${Math.round(value).toLocaleString()}`;
+  const formatCurrencyTick = (value: number) => formatCompactCurrency(value);
   const inputId = (key: keyof ForecastInputs) => `input-${key}`;
   const renderInputLabel = (key: keyof ForecastInputs, label: string) => (
     <label htmlFor={inputId(key)} className="label-with-info">
@@ -535,7 +548,7 @@ export const ForecasterApp = () => {
                     <XAxis dataKey="year" stroke="#c0ccec" />
                     <YAxis stroke="#c0ccec" tickFormatter={formatCurrencyTick} />
                     <Tooltip
-                      formatter={(value) => formatCurrencyTick(Number(value ?? 0))}
+                      formatter={(value) => formatCompactCurrency(Number(value ?? 0))}
                       contentStyle={{ backgroundColor: '#0d162a', border: '1px solid #32466d', borderRadius: 10 }}
                       itemStyle={{ color: '#f0f4ff' }}
                       labelStyle={{ color: '#c0ccec' }}
@@ -569,66 +582,108 @@ export const ForecasterApp = () => {
           <div className="tables">
             <article className="table-card">
               <h3>Financial Metrics</h3>
-              <table>
-                <thead>
-                  <tr>
-                    <th>Metric</th>
-                    {metricColumns.map((c) => (
-                      <th key={c}>{c}</th>
-                    ))}
-                  </tr>
-                </thead>
-                <tbody>
-                  {vm.financeRows.map((row) => (
-                    <tr key={row.label} className={row.label === 'Liquid Runway (Years)' ? 'highlight-row' : ''}>
-                      <td>
-                        {row.label === 'Liquid Runway (Years)' ? (
-                          <span className="label-with-info">
-                            <span>{row.label}</span>
-                            <span className="tooltip-wrap">
-                              <button type="button" className="info-icon" aria-label="About Liquid Runway">
-                                i
-                              </button>
-                              <span className="tooltip-content tooltip-content--center" role="tooltip">
-                                Static runway based on current liquid assets and current annual spend; assumes no investment growth.
-                              </span>
-                            </span>
-                          </span>
-                        ) : (
-                          row.label
-                        )}
-                      </td>
-                      {row.values.map((value, valueIndex) => (
-                        <td key={`${row.label}-${valueIndex}`}>{value}</td>
+              <div className="table-shell">
+                <table>
+                  <thead>
+                    <tr>
+                      <th>Metric</th>
+                      {metricColumns.map((c) => (
+                        <th key={c}>{c}</th>
                       ))}
                     </tr>
-                  ))}
-                </tbody>
-              </table>
+                  </thead>
+                  <tbody>
+                    {vm.financeRows.map((row) => (
+                      <tr key={row.label} className={row.label === 'Monthly Savings' ? 'highlight-row' : ''}>
+                        <td>{row.label}</td>
+                        {row.values.map((value, valueIndex) => (
+                          <td key={`${row.label}-${valueIndex}`}>{value}</td>
+                        ))}
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
             </article>
 
             <article className="table-card">
               <h3>Assets and Net Worth</h3>
-              <table>
-                <thead>
-                  <tr>
-                    <th>Metric</th>
-                    {metricColumns.map((c) => (
-                      <th key={c}>{c}</th>
-                    ))}
-                  </tr>
-                </thead>
-                <tbody>
-                  {vm.netWorthRows.map((row) => (
-                    <tr key={row.label} className={row.isTotal ? 'total' : ''}>
-                      <td>{row.label}</td>
-                      {row.values.map((value, valueIndex) => (
-                        <td key={`${row.label}-${valueIndex}`}>{value}</td>
+              <div className="table-shell">
+                <table>
+                  <thead>
+                    <tr>
+                      <th>Metric</th>
+                      {metricColumns.map((c) => (
+                        <th key={c}>{c}</th>
                       ))}
                     </tr>
-                  ))}
-                </tbody>
-              </table>
+                  </thead>
+                  <tbody>
+                    {vm.netWorthRows.map((row) => (
+                      <tr key={row.label} className={row.isTotal ? 'total' : ''}>
+                        <td>{row.label}</td>
+                        {row.values.map((value, valueIndex) => (
+                          <td key={`${row.label}-${valueIndex}`}>{value}</td>
+                        ))}
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </article>
+
+            <article className="table-card">
+              <h3>FI Health</h3>
+              <div className="table-shell">
+                <table>
+                  <thead>
+                    <tr>
+                      <th>Metric</th>
+                      {metricColumns.map((c) => (
+                        <th key={c}>{c}</th>
+                      ))}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {vm.fiHealthRows.map((row) => (
+                      <tr key={row.label} className="highlight-row">
+                        <td>
+                          {row.label === 'Liquid Runway (Years)' ? (
+                            <span className="label-with-info">
+                              <span>{row.label}</span>
+                              <span className="tooltip-wrap">
+                                <button type="button" className="info-icon" aria-label="About Liquid Runway">
+                                  i
+                                </button>
+                                <span className="tooltip-content tooltip-content--right" role="tooltip">
+                                  Static runway based on current liquid assets and current annual spend; assumes no investment growth.
+                                </span>
+                              </span>
+                            </span>
+                          ) : row.label === 'FI Coverage Ratio' ? (
+                            <span className="label-with-info">
+                              <span>{row.label}</span>
+                              <span className="tooltip-wrap">
+                                <button type="button" className="info-icon" aria-label="About FI Coverage Ratio">
+                                  i
+                                </button>
+                                <span className="tooltip-content tooltip-content--right" role="tooltip">
+                                  Ratio of annual FI withdrawals to annual spend (including mortgage): values above 1.00x indicate coverage.
+                                </span>
+                              </span>
+                            </span>
+                          ) : (
+                            row.label
+                          )}
+                        </td>
+                        {row.values.map((value, valueIndex) => (
+                          <td key={`${row.label}-${valueIndex}`}>{value}</td>
+                        ))}
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
             </article>
           </div>
         </section>

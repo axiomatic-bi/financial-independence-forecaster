@@ -91,5 +91,6 @@ export interface ForecastViewModel {
   withdrawalSeries: { name: string; values: number[] }[];
   financeRows: TableRow[];
   netWorthRows: TableRow[];
+  fiHealthRows: TableRow[];
   raw: ForecastResult;
 }
