@@ -1,16 +1,23 @@
 /* ========== DARK MODE THEME ========== */
 /* Colors (matching Python COLORS dict) */
 :root {
-    --bg-dark: #0f172a;
-    --surface: #1e293b;
-    --surface-hover: #334155;
-    --primary: #3b82f6;
-    --primary-light: #60a5fa;
-    --success: #10b981;
+    --bg-dark: #060a14;
+    --surface: #141f34;
+    --surface-hover: #1a2740;
+    --surface-subtle: #20304e;
+    --primary: #5768ff;
+    --primary-light: #8e75ff;
+    --success: #22c55e;
     --danger: #ef4444;
-    --text-primary: #f1f5f9;
-    --text-secondary: #cbd5e1;
-    --border: #475569;
+    --text-primary: #f0f4ff;
+    --text-secondary: #c0ccec;
+    --text-soft: #9fb1d8;
+    --border: #32466d;
+    --border-strong: #45608f;
+    --accent-soft: rgba(87, 104, 255, 0.24);
+    --radius-sm: 10px;
+    --radius-md: 14px;
+    --shadow-soft: 0 18px 34px rgba(2, 8, 20, 0.38);
 }
 
 /* Global styles */
@@ -21,13 +28,12 @@
 }
 
 body {
-    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
-        'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
-        sans-serif;
+    font-family: Inter, 'Segoe UI', Arial, sans-serif;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
     background-color: var(--bg-dark);
     color: var(--text-primary);
+    line-height: 1.55;
 }
 
 html,
@@ -47,18 +53,18 @@ select {
     background-color: var(--surface-hover) !important;
     color: var(--text-primary) !important;
     border: 1px solid var(--border) !important;
-    border-radius: 6px !important;
+    border-radius: var(--radius-sm) !important;
     padding: 10px 12px !important;
     font-size: 14px !important;
-    transition: all 0.2s ease;
+    transition: all 0.15s ease;
     box-sizing: border-box !important;
 }
 
 input:hover,
 textarea:hover,
 select:hover {
-    border-color: var(--primary) !important;
-    background-color: #3f4758 !important;
+    border-color: var(--border-strong) !important;
+    background-color: var(--surface-subtle) !important;
 }
 
 input:focus,
@@ -67,7 +73,7 @@ select:focus {
     outline: none !important;
     border-color: var(--primary) !important;
     background-color: var(--surface-hover) !important;
-    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.2) !important;
+    box-shadow: 0 0 0 3px var(--accent-soft) !important;
 }
 
 /* Specific input overrides */
@@ -91,11 +97,11 @@ input[type='password'] {
 
 .rc-slider-handle {
     border-color: var(--primary) !important;
-    background-color: var(--primary) !important;
+    background-color: var(--surface) !important;
 }
 
 .rc-slider-handle:hover {
-    box-shadow: 0 0 5px rgba(59, 130, 246, 0.5) !important;
+    box-shadow: 0 0 0 4px var(--accent-soft) !important;
 }
 
 .rc-slider-mark-text {
@@ -108,9 +114,10 @@ input[type='password'] {
 
 /* ========== CHART STYLES (DARK MODE) ========== */
 .plotly-graph-div {
-    border-radius: 8px !important;
+    border-radius: var(--radius-md) !important;
     background-color: var(--surface) !important;
     border: 1px solid var(--border) !important;
+    box-shadow: var(--shadow-soft);
     padding: 0 !important;
     margin: 0 !important;
 }
@@ -128,6 +135,45 @@ input[type='password'] {
     background-color: transparent !important;
 }
 
+/* ========== LAYOUT RESPONSIVE ========== */
+:root {
+    --panel-width: clamp(260px, 24vw, 340px);
+    --band-inline-padding: clamp(16px, 3vw, 30px);
+}
+
+.summary-main-band {
+    padding: 20px var(--band-inline-padding);
+    background-color: var(--surface);
+    border-bottom: 1px solid var(--border);
+}
+
+.app-main-row {
+    display: flex;
+    flex-direction: row;
+    flex-wrap: nowrap;
+    flex: 1;
+    width: 100%;
+    min-height: 0;
+    overflow-x: auto;
+}
+
+.app-side-panel {
+    width: var(--panel-width);
+    min-width: var(--panel-width);
+}
+
+.app-main-column {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+}
+
+.app-main-content {
+    width: 100%;
+    min-width: 0;
+}
+
 /* ========== RESPONSIVE ========== */
 @media (max-width: 768px) {
     input[type='number'],
@@ -135,5 +181,23 @@ input[type='password'] {
     textarea,
     select {
         font-size: 16px !important;
+    }
+}
+
+@media (max-width: 980px) {
+    .app-side-panel {
+        width: clamp(220px, 28vw, 300px);
+        min-width: clamp(220px, 28vw, 300px);
+    }
+}
+
+@media (max-width: 768px) {
+    .summary-main-band {
+        width: 100%;
+    }
+
+    .app-side-panel {
+        width: clamp(180px, 34vw, 240px);
+        min-width: clamp(180px, 34vw, 240px);
     }
 }

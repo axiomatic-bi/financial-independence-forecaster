@@ -1,7 +1,7 @@
 import plotly.graph_objs as go
 from dash import dcc, html
 
-from financial_forecaster.theme import COLORS, hex_to_rgba
+from financial_forecaster.theme import COLORS, DATA_COLORS, RADII, SPACING, TYPOGRAPHY, hex_to_rgba
 
 
 def build_wealth_chart(dates, total_wealth):
@@ -12,8 +12,8 @@ def build_wealth_chart(dates, total_wealth):
             y=total_wealth,
             fill="tozeroy",
             name="Total Wealth",
-            line=dict(color=COLORS["primary"], width=3),
-            fillcolor=hex_to_rgba(COLORS["primary_light"], 0.3),
+            line=dict(color=DATA_COLORS[0], width=3),
+            fillcolor=hex_to_rgba(DATA_COLORS[0], 0.25),
         )
     )
     chart.update_layout(
@@ -34,7 +34,7 @@ def build_savings_chart(dates, monthly_savings_values):
             x=dates,
             y=monthly_savings_values,
             name="Monthly Savings",
-            marker=dict(color=COLORS["success"]),
+            marker=dict(color=DATA_COLORS[3]),
         )
     )
     chart.update_layout(
@@ -56,7 +56,7 @@ def build_breakdown_chart(dates, isa_values, non_isa_values, pension_values, hom
             x=dates,
             y=isa_values,
             name="ISA Assets",
-            line=dict(color=COLORS["primary"], width=2),
+            line=dict(color=DATA_COLORS[0], width=2),
             stackgroup="one",
         )
     )
@@ -65,7 +65,7 @@ def build_breakdown_chart(dates, isa_values, non_isa_values, pension_values, hom
             x=dates,
             y=non_isa_values,
             name="Non-ISA Assets",
-            line=dict(color=COLORS["success"], width=2),
+            line=dict(color=DATA_COLORS[1], width=2),
             stackgroup="one",
         )
     )
@@ -74,7 +74,7 @@ def build_breakdown_chart(dates, isa_values, non_isa_values, pension_values, hom
             x=dates,
             y=pension_values,
             name="Pension (SIPP)",
-            line=dict(color=COLORS["primary_light"], width=2),
+            line=dict(color=DATA_COLORS[2], width=2),
             stackgroup="one",
         )
     )
@@ -84,7 +84,7 @@ def build_breakdown_chart(dates, isa_values, non_isa_values, pension_values, hom
                 x=dates,
                 y=home_equity_values,
                 name="Home Equity",
-                line=dict(color=COLORS["warning"], width=2),
+                line=dict(color=DATA_COLORS[4], width=2),
                 stackgroup="one",
             )
         )
@@ -109,9 +109,9 @@ def build_withdrawal_chart(dates, isa_values, expense_values):
             x=dates,
             y=withdrawal_39_annual,
             name="3.9% Annual Withdrawal",
-            line=dict(color=COLORS["primary"], width=2),
+            line=dict(color=DATA_COLORS[0], width=2),
             fill="tozeroy",
-            fillcolor=hex_to_rgba(COLORS["primary"], 0.2),
+            fillcolor=hex_to_rgba(DATA_COLORS[0], 0.2),
         )
     )
     chart.add_trace(
@@ -163,19 +163,24 @@ def build_summary_stats(
                 html.H3(
                     label,
                     style={
-                        "fontSize": "11px",
+                        "fontSize": TYPOGRAPHY["size_label"],
                         "color": COLORS["text_secondary"],
-                        "margin": "0 0 6px 0",
+                        "margin": f"0 0 {SPACING['xs']} 0",
                         "textTransform": "uppercase",
-                        "letterSpacing": "0.4px",
+                        "letterSpacing": TYPOGRAPHY["tracking_tight"],
                     },
                 ),
                 html.P(
                     value,
-                    style={"fontSize": "16px", "fontWeight": "700", "color": color, "margin": "0"},
+                    style={"fontSize": TYPOGRAPHY["size_value"], "fontWeight": "700", "color": color, "margin": "0"},
                 ),
             ],
-            style={"backgroundColor": COLORS["surface_hover"], "padding": "10px", "borderRadius": "4px"},
+            style={
+                "backgroundColor": COLORS["surface_subtle"],
+                "padding": f"{SPACING['sm']} {SPACING['sm']}",
+                "borderRadius": RADII["sm"],
+                "border": f"1px solid {COLORS['border']}",
+            },
         )
 
     return html.Div(
@@ -185,11 +190,11 @@ def build_summary_stats(
                     html.H3(
                         "KEY METRICS",
                         style={
-                            "fontSize": "12px",
+                            "fontSize": TYPOGRAPHY["size_section_label"],
                             "color": COLORS["text_secondary"],
-                            "margin": "0 0 12px 0",
+                            "margin": f"0 0 {SPACING['md']} 0",
                             "textTransform": "uppercase",
-                            "letterSpacing": "0.5px",
+                            "letterSpacing": TYPOGRAPHY["tracking_label"],
                             "fontWeight": "600",
                         },
                     ),
@@ -212,9 +217,9 @@ def build_summary_stats(
                         ],
                         style={
                             "display": "grid",
-                            "gridTemplateColumns": "1fr 1fr 1fr 1fr 1fr 1fr",
-                            "gap": "12px",
-                            "marginBottom": "20px",
+                            "gridTemplateColumns": "repeat(auto-fit, minmax(170px, 1fr))",
+                            "gap": SPACING["md"],
+                            "marginBottom": SPACING["xl"],
                         },
                     ),
                 ]
@@ -225,11 +230,11 @@ def build_summary_stats(
                     html.H3(
                         "KEY METRICS",
                         style={
-                            "fontSize": "12px",
+                            "fontSize": TYPOGRAPHY["size_section_label"],
                             "color": COLORS["text_secondary"],
-                            "margin": "0 0 12px 0",
+                            "margin": f"0 0 {SPACING['md']} 0",
                             "textTransform": "uppercase",
-                            "letterSpacing": "0.5px",
+                            "letterSpacing": TYPOGRAPHY["tracking_label"],
                             "fontWeight": "600",
                         },
                     ),
@@ -248,9 +253,9 @@ def build_summary_stats(
                         ],
                         style={
                             "display": "grid",
-                            "gridTemplateColumns": "1fr 1fr 1fr 1fr 1fr 1fr",
-                            "gap": "12px",
-                            "marginBottom": "20px",
+                            "gridTemplateColumns": "repeat(auto-fit, minmax(170px, 1fr))",
+                            "gap": SPACING["md"],
+                            "marginBottom": SPACING["xl"],
                         },
                     ),
                 ]
@@ -282,19 +287,24 @@ def build_projected_stats(
                 html.H3(
                     label,
                     style={
-                        "fontSize": "11px",
+                        "fontSize": TYPOGRAPHY["size_label"],
                         "color": COLORS["text_secondary"],
-                        "margin": "0 0 6px 0",
+                        "margin": f"0 0 {SPACING['xs']} 0",
                         "textTransform": "uppercase",
-                        "letterSpacing": "0.4px",
+                        "letterSpacing": TYPOGRAPHY["tracking_tight"],
                     },
                 ),
                 html.P(
                     value,
-                    style={"fontSize": "16px", "fontWeight": "700", "color": color, "margin": "0"},
+                    style={"fontSize": TYPOGRAPHY["size_value"], "fontWeight": "700", "color": color, "margin": "0"},
                 ),
             ],
-            style={"backgroundColor": COLORS["surface_hover"], "padding": "10px", "borderRadius": "4px"},
+            style={
+                "backgroundColor": COLORS["surface_subtle"],
+                "padding": f"{SPACING['sm']} {SPACING['sm']}",
+                "borderRadius": RADII["sm"],
+                "border": f"1px solid {COLORS['border']}",
+            },
         )
 
     cards = [
@@ -320,25 +330,40 @@ def build_projected_stats(
 
     return html.Div(
         cards,
-        style={"display": "grid", "gridTemplateColumns": f"repeat({len(cards)}, 1fr)", "gap": "12px"},
+        style={
+            "display": "grid",
+            "gridTemplateColumns": "repeat(auto-fit, minmax(170px, 1fr))",
+            "gap": SPACING["md"],
+        },
     )
 
 
-def create_summary_stats():
+def create_summary_stats(full_bleed: bool = False):
+    content = [
+        html.H2(
+            "Financial Summary",
+            style={
+                "color": COLORS["text_primary"],
+                "marginBottom": SPACING["xl"],
+                "fontSize": TYPOGRAPHY["size_heading"],
+            },
+        ),
+        html.Div(id="summary-stats"),
+    ]
+
+    if full_bleed:
+        return html.Div(content)
+
     return html.Div(
         [
-            html.H2(
-                "Financial Summary",
-                style={"color": COLORS["text_primary"], "marginBottom": "20px", "fontSize": "22px"},
-            ),
-            html.Div(id="summary-stats"),
+            *content,
         ],
         style={
             "backgroundColor": COLORS["surface"],
-            "padding": "20px",
-            "borderRadius": "8px",
+            "padding": SPACING["xl"],
+            "borderRadius": RADII["md"],
             "border": f"1px solid {COLORS['border']}",
-            "marginBottom": "24px",
+            "marginBottom": SPACING["xxl"],
         },
     )
 
@@ -352,10 +377,10 @@ def create_charts_section():
                         [dcc.Graph(id="wealth-forecast-chart")],
                         style={
                             "backgroundColor": COLORS["surface"],
-                            "padding": "16px",
-                            "borderRadius": "8px",
+                            "padding": SPACING["lg"],
+                            "borderRadius": RADII["md"],
                             "border": f"1px solid {COLORS['border']}",
-                            "flex": "1",
+                            "flex": "1 1 420px",
                             "minWidth": "0",
                         },
                     ),
@@ -363,15 +388,15 @@ def create_charts_section():
                         [dcc.Graph(id="asset-breakdown-chart")],
                         style={
                             "backgroundColor": COLORS["surface"],
-                            "padding": "16px",
-                            "borderRadius": "8px",
+                            "padding": SPACING["lg"],
+                            "borderRadius": RADII["md"],
                             "border": f"1px solid {COLORS['border']}",
-                            "flex": "1",
+                            "flex": "1 1 420px",
                             "minWidth": "0",
                         },
                     ),
                 ],
-                style={"display": "flex", "gap": "24px", "marginBottom": "24px"},
+                style={"display": "flex", "flexWrap": "wrap", "gap": SPACING["xxl"], "marginBottom": SPACING["xxl"]},
             ),
             html.Div(
                 [
@@ -379,10 +404,10 @@ def create_charts_section():
                         [dcc.Graph(id="monthly-savings-chart")],
                         style={
                             "backgroundColor": COLORS["surface"],
-                            "padding": "16px",
-                            "borderRadius": "8px",
+                            "padding": SPACING["lg"],
+                            "borderRadius": RADII["md"],
                             "border": f"1px solid {COLORS['border']}",
-                            "flex": "1",
+                            "flex": "1 1 420px",
                             "minWidth": "0",
                         },
                     ),
@@ -390,26 +415,26 @@ def create_charts_section():
                         [dcc.Graph(id="withdrawal-chart")],
                         style={
                             "backgroundColor": COLORS["surface"],
-                            "padding": "16px",
-                            "borderRadius": "8px",
+                            "padding": SPACING["lg"],
+                            "borderRadius": RADII["md"],
                             "border": f"1px solid {COLORS['border']}",
-                            "flex": "1",
+                            "flex": "1 1 420px",
                             "minWidth": "0",
                         },
                     ),
                 ],
-                style={"display": "flex", "gap": "24px"},
+                style={"display": "flex", "flexWrap": "wrap", "gap": SPACING["xxl"]},
             ),
             html.Div(
                 [
                     html.H3(
                         "PROJECTED OUTCOMES",
                         style={
-                            "fontSize": "12px",
+                            "fontSize": TYPOGRAPHY["size_section_label"],
                             "color": COLORS["text_secondary"],
-                            "margin": "24px 0 12px 0",
+                            "margin": f"{SPACING['xxl']} 0 {SPACING['md']} 0",
                             "textTransform": "uppercase",
-                            "letterSpacing": "0.5px",
+                            "letterSpacing": TYPOGRAPHY["tracking_label"],
                             "fontWeight": "600",
                         },
                     ),
@@ -417,5 +442,5 @@ def create_charts_section():
                 ]
             ),
         ],
-        style={"marginTop": "24px"},
+        style={"marginTop": SPACING["xxl"]},
     )

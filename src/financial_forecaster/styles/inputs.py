@@ -1,32 +1,32 @@
-from financial_forecaster.theme import COLORS
+from financial_forecaster.theme import COLORS, RADII, SPACING, TYPOGRAPHY
 
 SECTION_TITLE_STYLE = {
     "color": COLORS["primary"],
-    "fontSize": "14px",
-    "marginBottom": "16px",
+    "fontSize": TYPOGRAPHY["size_body"],
+    "marginBottom": SPACING["lg"],
     "fontWeight": "600",
     "textTransform": "uppercase",
-    "letterSpacing": "0.5px",
+    "letterSpacing": TYPOGRAPHY["tracking_label"],
 }
 
 SECTION_CONTAINER_STYLE = {
-    "marginBottom": "24px",
-    "paddingBottom": "16px",
+    "marginBottom": SPACING["xxl"],
+    "paddingBottom": SPACING["lg"],
     "borderBottom": f"1px solid {COLORS['border']}",
 }
 
 LABEL_STYLE = {
     "fontWeight": "600",
     "color": COLORS["text_primary"],
-    "marginBottom": "6px",
-    "fontSize": "13px",
+    "marginBottom": SPACING["xs"],
+    "fontSize": TYPOGRAPHY["size_body"],
 }
 
 DETAILS_STYLE = {
-    "backgroundColor": "#243144",
+    "backgroundColor": COLORS["surface_subtle"],
     "border": f"1px solid {COLORS['border']}",
-    "borderRadius": "8px",
-    "padding": "12px 12px 0 12px",
+    "borderRadius": RADII["sm"],
+    "padding": f"{SPACING['md']} {SPACING['md']} 0 {SPACING['md']}",
 }
 
 SUMMARY_STYLE = {
@@ -34,29 +34,33 @@ SUMMARY_STYLE = {
     "fontWeight": "600",
     "cursor": "pointer",
     "fontSize": "14px",
-    "marginBottom": "12px",
+    "marginBottom": SPACING["md"],
 }
 
-PANEL_TITLE_STYLE = {"color": COLORS["text_primary"], "marginBottom": "24px", "fontSize": "20px"}
+PANEL_TITLE_STYLE = {
+    "color": COLORS["text_primary"],
+    "marginBottom": SPACING["xxl"],
+    "fontSize": TYPOGRAPHY["size_title"],
+}
 
 PANEL_STYLE = {
     "backgroundColor": COLORS["surface"],
-    "padding": "20px",
-    "borderRadius": "8px",
+    "padding": SPACING["xl"],
+    "borderRadius": RADII["md"],
     "border": f"1px solid {COLORS['border']}",
     "height": "100%",
 }
 
-PANEL_WRAPPER_STYLE = {"paddingRight": "20px"}
+PANEL_WRAPPER_STYLE = {"paddingRight": SPACING["xl"]}
 
 BUTTON_STYLE = {
     "width": "100%",
-    "padding": "14px 20px",
+    "padding": f"14px {SPACING['xl']}",
     "backgroundColor": COLORS["primary"],
     "color": "white",
     "border": "none",
-    "borderRadius": "6px",
-    "fontSize": "15px",
+    "borderRadius": RADII["sm"],
+    "fontSize": TYPOGRAPHY["size_body"],
     "fontWeight": "600",
     "cursor": "pointer",
     "transition": "background-color 0.2s ease",
@@ -65,6 +69,6 @@ BUTTON_STYLE = {
 SECTION_HEADING_MARGIN_STYLE = {
     "fontWeight": "600",
     "color": COLORS["text_primary"],
-    "marginBottom": "8px",
-    "fontSize": "13px",
+    "marginBottom": SPACING["sm"],
+    "fontSize": TYPOGRAPHY["size_body"],
 }

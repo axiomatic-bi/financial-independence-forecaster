@@ -1,14 +1,54 @@
+# Virtual environments
 .venv/
 venv/
+env/
+ENV/
+
+# Python cache / compiled files
 __pycache__/
 *.py[cod]
-*.pyo
-*.pyd
+*$py.class
+
+# Test / coverage
 .pytest_cache/
-.mypy_cache/
-.ruff_cache/
 .coverage
+.coverage.*
 coverage.xml
 htmlcov/
+.hypothesis/
+.tox/
+.nox/
+
+# Type checking / linting
+.mypy_cache/
+.pyre/
+.pytype/
+.ruff_cache/
+
+# Build / packaging
+build/
+dist/
+.eggs/
+*.egg-info/
+*.egg
+pip-wheel-metadata/
+
+# Jupyter / interactive
+.ipynb_checkpoints/
+
+# Environment / local config
+.env
+.env.*
+.envrc
+.python-version
+
+# Dash / app local data
+instance/
+
+# OS files
 .DS_Store
 Thumbs.db
+
+# Editors
+.vscode/
+.idea/
