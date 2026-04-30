@@ -14,12 +14,12 @@ def _add_months(base_date: datetime, months: int) -> datetime:
 
 
 def calculate_monthly_pension(
-    income: float, pension_type: str, pension_contribution: float, pension_rate: float
+    base_income: float, pension_type: str, pension_contribution: float, pension_rate: float
 ) -> float:
-    """Calculate monthly pension contribution based on input type."""
+    """Calculate a monthly contribution from either percentage or fixed input."""
     if pension_type == "percentage":
         pension_amount = pension_contribution or pension_rate
-        return income * (pension_amount / 100)
+        return base_income * (pension_amount / 100)
     return pension_contribution
 
 
@@ -46,6 +46,7 @@ def simulate_month(
     current_non_isa: float,
     current_pension: float,
     current_income: float,
+    current_pensionable_income: float,
     current_expenses: float,
     isa_rate: float,
     non_isa_rate: float,
@@ -58,25 +59,35 @@ def simulate_month(
     pension_contribution: float,
     employer_pension_contribution_rate: float,
     pension_rate: float,
+    sipp_type: str,
+    sipp_contribution: float,
+    sipp_rate: float,
     pension_tax_relief_rate: float,
 ) -> dict:
     """Simulate one month and return updated account state."""
     if month > 0 and date.month == 1:
         current_expenses = current_expenses * (1 + inflation_rate / 100)
         current_income = current_income * (1 + wage_increase_rate / 100)
+        current_pensionable_income = current_pensionable_income * (1 + wage_increase_rate / 100)
 
     if month > 0 and date.month == 4:
         isa_annual_used = 0
 
-    current_monthly_pension = calculate_monthly_pension(
-        current_income, pension_type, pension_contribution, pension_rate
+    current_monthly_workplace_pension = calculate_monthly_pension(
+        current_pensionable_income, pension_type, pension_contribution, pension_rate
     )
-    current_monthly_employer_pension = current_income * (employer_pension_contribution_rate / 100)
+    current_monthly_sipp_net = calculate_monthly_pension(
+        current_pensionable_income, sipp_type, sipp_contribution, sipp_rate
+    )
+    current_monthly_employer_pension = current_pensionable_income * (employer_pension_contribution_rate / 100)
+    current_monthly_sipp_gross = current_monthly_sipp_net
 
-    if pension_tax_relief_rate and current_monthly_pension > 0:
-        current_monthly_pension = current_monthly_pension * (1 + pension_tax_relief_rate / 100)
+    if pension_tax_relief_rate and current_monthly_sipp_net > 0:
+        current_monthly_sipp_gross = current_monthly_sipp_net * (1 + pension_tax_relief_rate / 100)
 
-    current_monthly_savings = current_income - current_expenses - current_monthly_pension
+    current_monthly_personal_pension = current_monthly_workplace_pension + current_monthly_sipp_net
+    # Net-pay model: take-home income already excludes workplace employee pension deductions.
+    current_monthly_savings = current_income - current_expenses - current_monthly_sipp_net
 
     if month > 0:
         current_isa = current_isa * (1 + isa_rate / 12)
@@ -92,15 +103,21 @@ def simulate_month(
             current_non_isa += non_isa_contribution
             isa_annual_used += isa_contribution
 
-        current_pension += current_monthly_pension + current_monthly_employer_pension
+        current_pension += (
+            current_monthly_workplace_pension
+            + current_monthly_sipp_gross
+            + current_monthly_employer_pension
+        )
 
     return {
         "isa": current_isa,
         "non_isa": current_non_isa,
         "pension": current_pension,
         "income": current_income,
+        "pensionable_income": current_pensionable_income,
         "expenses": current_expenses,
         "savings": current_monthly_savings,
+        "monthly_personal_pension": current_monthly_personal_pension,
         "isa_annual_used": isa_annual_used,
     }
 
@@ -128,6 +145,10 @@ def calculate_forecast(
     inflation_rate: float = 2.0,
     wage_increase_rate: float = 3.0,
     isa_annual_contribution: float = 40000,
+    pensionable_monthly_pay: float | None = None,
+    sipp_type: str = "fixed",
+    sipp_contribution: float = 0,
+    sipp_rate: float = 0,
 ) -> dict:
     """Calculate a month-by-month financial projection."""
     income = income or 0
@@ -140,6 +161,9 @@ def calculate_forecast(
     pension_assets = pension_assets or 0
     pension_contribution = pension_contribution or 0
     employer_pension_contribution_rate = employer_pension_contribution_rate or 0
+    pensionable_monthly_pay = income if pensionable_monthly_pay is None else pensionable_monthly_pay or 0
+    sipp_contribution = sipp_contribution or 0
+    sipp_rate = sipp_rate or 0
 
     home_value = home_value or 0
     mortgage_balance = mortgage_balance or 0
@@ -151,12 +175,14 @@ def calculate_forecast(
     monthly_mortgage_payment = calculate_mortgage_payment(
         mortgage_balance, mortgage_interest_rate, mortgage_term
     )
-    monthly_pension = calculate_monthly_pension(
-        income, pension_type, pension_contribution, pension_rate
+    monthly_workplace_pension = calculate_monthly_pension(
+        pensionable_monthly_pay, pension_type, pension_contribution, pension_rate
     )
-    if pension_tax_relief_rate and monthly_pension > 0:
-        monthly_pension = monthly_pension * (1 + pension_tax_relief_rate / 100)
-    monthly_savings = income - expenses - monthly_pension
+    monthly_sipp_net = calculate_monthly_pension(
+        pensionable_monthly_pay, sipp_type, sipp_contribution, sipp_rate
+    )
+    # Net-pay model: only SIPP is deducted from take-home cashflow.
+    monthly_savings = income - expenses - monthly_sipp_net
     annual_isa_limit = isa_annual_contribution
 
     dates = []
@@ -175,6 +201,7 @@ def calculate_forecast(
     current_non_isa = non_isa_assets
     current_pension = pension_assets
     current_income = income
+    current_pensionable_income = pensionable_monthly_pay
     current_expenses = expenses
     isa_annual_used = 0
     current_mortgage_balance = mortgage_balance
@@ -198,6 +225,7 @@ def calculate_forecast(
             current_non_isa=current_non_isa,
             current_pension=current_pension,
             current_income=current_income,
+            current_pensionable_income=current_pensionable_income,
             current_expenses=current_expenses,
             isa_rate=isa_rate,
             non_isa_rate=non_isa_rate,
@@ -210,6 +238,9 @@ def calculate_forecast(
             pension_contribution=pension_contribution,
             employer_pension_contribution_rate=employer_pension_contribution_rate,
             pension_rate=pension_rate,
+            sipp_type=sipp_type,
+            sipp_contribution=sipp_contribution,
+            sipp_rate=sipp_rate,
             pension_tax_relief_rate=pension_tax_relief_rate,
         )
 
@@ -217,6 +248,7 @@ def calculate_forecast(
         current_non_isa = month_result["non_isa"]
         current_pension = month_result["pension"]
         current_income = month_result["income"]
+        current_pensionable_income = month_result["pensionable_income"]
         current_expenses = month_result["expenses"]
         isa_annual_used = month_result["isa_annual_used"]
 
@@ -287,7 +319,7 @@ def calculate_forecast(
         "monthly_savings_values": monthly_savings_values,
         "income": income,
         "expenses": expenses,
-        "monthly_pension": monthly_pension,
+        "monthly_pension": monthly_workplace_pension + monthly_sipp_net,
         "inflation_rate": inflation_rate,
         "wage_increase_rate": wage_increase_rate,
         "isa_assets": isa_assets,
@@ -311,6 +343,10 @@ def calculate_forecast(
         "final_home_equity": current_home_equity,
         "monthly_mortgage_payment": monthly_mortgage_payment,
         "mortgage_interest_rate": mortgage_interest_rate,
+        "pensionable_monthly_pay": pensionable_monthly_pay,
+        "sipp_type": sipp_type,
+        "sipp_contribution": sipp_contribution,
+        "sipp_rate": sipp_rate,
         "fi_date": fi_date,
         "fi_month_index": fi_month_index,
         "fi_evaluation_end_month": fi_evaluation_end_month,

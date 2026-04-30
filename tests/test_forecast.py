@@ -47,3 +47,58 @@ def test_calculate_forecast_returns_expected_shape():
     assert len(result["non_isa_values"]) == 13
     assert len(result["pension_values"]) == 13
     assert result["final_wealth"] >= 0
+
+
+def test_calculate_forecast_applies_sipp_relief_to_pot_not_cashflow():
+    result = calculate_forecast(
+        income=5000,
+        expenses=2000,
+        isa_assets=0,
+        isa_rate=0,
+        non_isa_assets=0,
+        non_isa_rate=0,
+        months=1,
+        pension_assets=10000,
+        pensionable_monthly_pay=5000,
+        pension_type="fixed",
+        pension_contribution=0,
+        employer_pension_contribution_rate=0,
+        sipp_type="fixed",
+        sipp_contribution=100,
+        sipp_rate=0,
+        pension_tax_relief_rate=20,
+        pension_interest_rate=0,
+    )
+
+    # Cashflow only deducts net SIPP contribution.
+    assert result["monthly_savings"] == pytest.approx(2900.0)
+    # Pension pot receives SIPP contribution uplifted by selected tax relief.
+    assert result["pension_values"][-1] == pytest.approx(10120.0)
+
+
+def test_calculate_forecast_does_not_double_deduct_workplace_pension_from_net_income():
+    result = calculate_forecast(
+        income=5000,
+        expenses=2000,
+        isa_assets=0,
+        isa_rate=0,
+        non_isa_assets=0,
+        non_isa_rate=0,
+        months=1,
+        pension_assets=10000,
+        pensionable_monthly_pay=5000,
+        pension_type="percentage",
+        pension_contribution=5,
+        pension_rate=5,
+        employer_pension_contribution_rate=3,
+        sipp_type="fixed",
+        sipp_contribution=0,
+        sipp_rate=0,
+        pension_tax_relief_rate=20,
+        pension_interest_rate=0,
+    )
+
+    # Net-pay model: workplace pension should not be deducted again from monthly savings.
+    assert result["monthly_savings"] == pytest.approx(3000.0)
+    # Pension pot still receives workplace personal + employer contributions.
+    assert result["pension_values"][-1] == pytest.approx(10400.0)

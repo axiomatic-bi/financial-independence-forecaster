@@ -25,7 +25,9 @@ class InputFieldConfig:
 
 
 INCOME_EXPENSES_FIELDS = [
-    InputFieldConfig(label="Monthly Income (After Tax) (£)", input_id="monthly-income", value=0),
+    InputFieldConfig(
+        label="Monthly Income (After Tax, After Workplace Pension) (£)", input_id="monthly-income", value=0
+    ),
     InputFieldConfig(
         label="Monthly Expenses (Excluding Mortgage) (£)",
         input_id="monthly-expenses",
@@ -86,9 +88,14 @@ PROPERTY_FIELDS = [
 CURRENT_PENSION_FIELD = InputFieldConfig(label="Current Pension Pot (£)", input_id="pension-assets", value=0)
 
 PENSION_FIELDS = [
-    InputFieldConfig(label="Personal Contribution (% or £)", input_id="pension-contribution", value=5.0),
+    InputFieldConfig(label="Pensionable Monthly Pay (£)", input_id="pensionable-monthly-pay", value=0),
     InputFieldConfig(
-        label="Employer Contribution (%)",
+        label="Workplace Personal Contribution (% of Pensionable Pay or £)",
+        input_id="pension-contribution",
+        value=5.0,
+    ),
+    InputFieldConfig(
+        label="Employer Contribution (% of Pensionable Pay)",
         input_id="employer-pension-contribution-rate",
         value=3.0,
         input_props={"step": 0.1},
@@ -99,6 +106,9 @@ PENSION_FIELDS = [
         value=5.0,
         input_props={"step": 0.1},
     ),
+]
+SIPP_FIELDS = [
+    InputFieldConfig(label="SIPP Contribution (£ per month, net)", input_id="sipp-contribution", value=0),
 ]
 
 FORECAST_ADVANCED_FIELDS = [
@@ -181,7 +191,10 @@ def build_income_expenses_section() -> html.Div:
     return build_fields_group(
         "Income & Expenses",
         INCOME_EXPENSES_FIELDS,
-        help_text="Income should be monthly take-home pay after tax. Expenses should exclude mortgage payments.",
+        help_text=(
+            "Income should be monthly take-home pay after tax and after workplace pension payroll deductions. "
+            "Expenses should exclude mortgage payments."
+        ),
     )
 
 
@@ -203,8 +216,9 @@ def build_pension_section() -> html.Div:
             build_section_heading(
                 "Pension",
                 help_text=(
-                    "Add your current pension pot and ongoing contribution. "
-                    "Tax relief applies an uplift to the entered contribution."
+                    "Workplace contributions use pensionable pay and increase pension growth only. "
+                    "In this net-pay model, workplace personal contributions are not deducted again from monthly savings. "
+                    "SIPP is treated as an extra contribution from take-home pay, with tax relief applied to pension growth."
                 ),
             ),
             build_number_field(CURRENT_PENSION_FIELD),
@@ -214,7 +228,7 @@ def build_pension_section() -> html.Div:
                     dcc.RadioItems(
                         id="pension-type",
                         options=[
-                            {"label": " Percentage of Income", "value": "percentage"},
+                            {"label": " Percentage of Pensionable Pay", "value": "percentage"},
                             {"label": " Fixed Amount", "value": "fixed"},
                         ],
                         value="percentage",
@@ -251,6 +265,7 @@ def build_pension_section() -> html.Div:
                 ],
                 style={"marginBottom": "12px"},
             ),
+            *[build_number_field(field) for field in SIPP_FIELDS],
         ],
         style={
             **SECTION_CONTAINER_STYLE,

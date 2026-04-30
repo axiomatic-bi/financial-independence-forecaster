@@ -20,6 +20,7 @@ const scenarios = (fixtureData as { scenarios: ScenarioFixture[] }).scenarios;
 const mapFixtureInputs = (inputs: Record<string, number | string>) => ({
   income: Number(inputs.income),
   expenses: Number(inputs.expenses),
+  pensionableMonthlyPay: Number(inputs.pensionable_monthly_pay ?? inputs.income),
   isaAssets: Number(inputs.isa_assets),
   isaRate: Number(inputs.isa_rate),
   nonIsaAssets: Number(inputs.non_isa_assets),
@@ -37,6 +38,7 @@ const mapFixtureInputs = (inputs: Record<string, number | string>) => ({
   employerPensionContributionRate: Number(inputs.employer_pension_contribution_rate),
   pensionInterestRate: Number(inputs.pension_interest_rate),
   pensionTaxReliefRate: Number(inputs.pension_tax_relief_rate),
+  sippContribution: Number(inputs.sipp_contribution ?? 0),
   inflationRate: Number(inputs.inflation_rate),
   wageIncreaseRate: Number(inputs.wage_increase_rate),
   extractionRate: 3.9,

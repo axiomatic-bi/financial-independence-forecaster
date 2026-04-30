@@ -26,7 +26,7 @@ const themeDataColor = (token: string, fallback: string): string => {
 const metricColumns = ['Current', '1Y', '5Y', '10Y', '20Y', 'FI'];
 
 const incomeFields: { key: keyof ForecastInputs; label: string; step?: number }[] = [
-  { key: 'income', label: 'Monthly Income (After Tax) (£)' },
+  { key: 'income', label: 'Monthly Income (After Tax, After Workplace Pension) (£)' },
   { key: 'expenses', label: 'Monthly Expenses (Excluding Mortgage) (£)' },
 ];
 
@@ -50,9 +50,13 @@ const propertyFields: { key: keyof ForecastInputs; label: string; step?: number 
 
 const pensionFields: { key: keyof ForecastInputs; label: string; step?: number }[] = [
   { key: 'pensionAssets', label: 'Current Pension Pot (£)' },
-  { key: 'pensionContribution', label: 'Personal Contribution (% or £)', step: 0.1 },
-  { key: 'employerPensionContributionRate', label: 'Employer Contribution (%)', step: 0.1 },
+  { key: 'pensionableMonthlyPay', label: 'Pensionable Monthly Pay (£)' },
+  { key: 'pensionContribution', label: 'Workplace Personal Contribution (% of pensionable pay or £)', step: 0.1 },
+  { key: 'employerPensionContributionRate', label: 'Employer Contribution (% of pensionable pay)', step: 0.1 },
   { key: 'pensionInterestRate', label: 'Pension Interest Rate (%)', step: 0.1 },
+];
+const sippFields: { key: keyof ForecastInputs; label: string; step?: number }[] = [
+  { key: 'sippContribution', label: 'SIPP Contribution (£ per month, net)', step: 1 },
 ];
 
 const advancedAssumptionsFields: { key: keyof ForecastInputs; label: string; step?: number }[] = [
@@ -62,8 +66,23 @@ const advancedAssumptionsFields: { key: keyof ForecastInputs; label: string; ste
   { key: 'isaAnnualContribution', label: 'Annual ISA Contribution Limit (£)', step: 1000 },
 ];
 
-const fiTooltipText = (extractionRate: number) =>
+const fiBasisTooltipText = (extractionRate: number) =>
   `Financial independence (FI) here means annual ISA + non-ISA withdrawal at ${extractionRate.toFixed(1)}% covers annual expenses; pension and home equity are excluded.`;
+const kpiTooltipText = (label: string, extractionRate: number): string | null => {
+  if (label === 'FI Date') {
+    return `Estimated month when FI is first reached under your current assumptions. ${fiBasisTooltipText(extractionRate)}`;
+  }
+  if (label === 'Years Until FI') {
+    return `Number of years from today until the model first reaches FI. ${fiBasisTooltipText(extractionRate)}`;
+  }
+  if (label.includes('Passive Income at FI')) {
+    return `Estimated annual withdrawal available at FI using your ${extractionRate.toFixed(1)}% extraction rate on ISA and non-ISA assets.`;
+  }
+  if (label === 'Savings Rate at FI') {
+    return 'Monthly savings divided by monthly income at the FI point in the projection.';
+  }
+  return null;
+};
 const INPUTS_STORAGE_KEY = 'financial-forecaster:inputs';
 const renderAssetTooltip = ({
   active,
@@ -96,7 +115,7 @@ const renderAssetTooltip = ({
   );
 };
 const inputTooltips: Partial<Record<keyof ForecastInputs, string>> = {
-  income: 'Your estimated monthly take-home household income after tax.',
+  income: 'Your monthly take-home household income after tax and after workplace pension payroll deductions.',
   expenses: 'Your monthly household spending excluding mortgage repayments.',
   isaAssets: 'Current balance held in ISA accounts.',
   nonIsaAssets: 'Current balance held outside ISA wrappers (taxable investments/cash).',
@@ -111,10 +130,13 @@ const inputTooltips: Partial<Record<keyof ForecastInputs, string>> = {
   mortgageInterestRate: 'Annual mortgage interest rate.',
   homeAppreciationRate: 'Expected annual home value growth rate.',
   pensionAssets: 'Current total pension pot value.',
-  pensionContribution: 'Personal pension contribution (percentage or fixed monthly amount).',
-  employerPensionContributionRate: 'Employer pension contribution percentage of salary.',
+  pensionableMonthlyPay: 'Monthly pensionable pay used for workplace pension percentage calculations.',
+  pensionContribution:
+    'Your workplace personal contribution. In this net-pay model it increases pension growth but is not deducted again from monthly savings.',
+  employerPensionContributionRate: 'Employer pension contribution percentage of pensionable pay.',
   pensionInterestRate: 'Expected annual pension growth rate.',
-  pensionTaxReliefRate: 'Tax relief applied to eligible pension contributions.',
+  pensionTaxReliefRate: 'Tax relief rate applied to SIPP contributions.',
+  sippContribution: 'Net SIPP contribution paid from take-home cash each month.',
   extractionRate: 'Annual extraction rate used for FI checks and passive income projections.',
   isaAnnualContribution: 'Annual ISA contribution allowance used as a cap in projections.',
 };
@@ -358,7 +380,7 @@ export const ForecasterApp = () => {
                   setInputs((prev) => ({ ...prev, pensionType: event.target.value as ForecastInputs['pensionType'] }))
                 }
               >
-                <option value="percentage">Percentage</option>
+                <option value="percentage">Percentage of Pensionable Pay</option>
                 <option value="fixed">Fixed Amount</option>
               </select>
             </div>
@@ -395,6 +417,25 @@ export const ForecasterApp = () => {
                 <option value={45}>Additional Rate (45%)</option>
               </select>
             </div>
+            {sippFields.map(({ key, label, step }) => (
+              <div className="field" key={key}>
+                {renderInputLabel(key, label)}
+                <input
+                  id={inputId(key)}
+                  name={inputId(key)}
+                  type="number"
+                  step={step ?? 1}
+                  value={inputs[key] as number}
+                  onFocus={handleNumberFocus}
+                  onChange={(event) =>
+                    setInputs((prev) => ({
+                      ...prev,
+                      [key]: Number(event.target.value),
+                    }))
+                  }
+                />
+              </div>
+            ))}
           </details>
 
           <details className="advanced-group">
@@ -426,16 +467,13 @@ export const ForecasterApp = () => {
           <div className="kpis">
             {vm.kpis.map((card) => (
               <article key={card.label} className="card">
-                {(card.label.includes('Passive Income at FI') ||
-                  card.label === 'FI Date' ||
-                  card.label === 'Years Until FI' ||
-                  card.label === 'Savings Rate at FI') && (
+                {kpiTooltipText(card.label, inputs.extractionRate) && (
                   <span className="tooltip-wrap tooltip-corner">
                     <button type="button" className="info-icon" aria-label="What FI means">
                       i
                     </button>
                     <span className="tooltip-content" role="tooltip">
-                      {fiTooltipText(inputs.extractionRate)}
+                      {kpiTooltipText(card.label, inputs.extractionRate)}
                     </span>
                   </span>
                 )}
@@ -471,7 +509,7 @@ export const ForecasterApp = () => {
                       stackId="1"
                       stroke={dataColors.pension}
                       fill={dataColors.pension}
-                      name="Pension (SIPP)"
+                      name="Pension"
                     />
                     <Area
                       type="monotone"

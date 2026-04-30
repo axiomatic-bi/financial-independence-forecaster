@@ -3,6 +3,7 @@ export type PensionType = 'percentage' | 'fixed';
 export interface ForecastInputs {
   income: number;
   expenses: number;
+  pensionableMonthlyPay: number;
   isaAssets: number;
   isaRate: number;
   nonIsaAssets: number;
@@ -20,6 +21,7 @@ export interface ForecastInputs {
   employerPensionContributionRate: number;
   pensionInterestRate: number;
   pensionTaxReliefRate: number;
+  sippContribution: number;
   inflationRate: number;
   wageIncreaseRate: number;
   extractionRate: number;
@@ -59,6 +61,8 @@ export interface ForecastResult {
   final_home_equity: number;
   monthly_mortgage_payment: number;
   mortgage_interest_rate: number;
+  pensionable_monthly_pay: number;
+  sipp_contribution: number;
   fi_date: string | null;
   fi_month_index: number | null;
   fi_evaluation_end_month: number;

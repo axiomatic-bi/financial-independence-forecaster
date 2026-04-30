@@ -87,6 +87,7 @@ const buildNetWorthRows = (result: ForecastResult): TableRow[] => {
 
 export const normalizeInputs = (inputs: ForecastInputs): ForecastInputs => ({
   ...inputs,
+  pensionableMonthlyPay: inputs.pensionableMonthlyPay || inputs.income,
   forecastYears: inputs.forecastYears || 40,
   mortgageInterestRate: inputs.mortgageInterestRate || 3.83,
   homeAppreciationRate: inputs.homeAppreciationRate || 3.0,
@@ -119,6 +120,8 @@ export const buildForecastViewModel = (rawInputs: ForecastInputs): ForecastViewM
     pensionRate: inputs.pensionType === 'percentage' ? inputs.pensionContribution : 5.0,
     pensionInterestRate: inputs.pensionInterestRate,
     pensionTaxReliefRate: inputs.pensionTaxReliefRate,
+    pensionableMonthlyPay: inputs.pensionableMonthlyPay,
+    sippContribution: inputs.sippContribution,
     inflationRate: inputs.inflationRate,
     wageIncreaseRate: inputs.wageIncreaseRate,
     isaAnnualContribution: inputs.isaAnnualContribution,
@@ -145,7 +148,7 @@ export const buildForecastViewModel = (rawInputs: ForecastInputs): ForecastViewM
   const assetSeries = [
     { name: 'ISA Assets', values: sample(extendedIsa.values, indices) },
     { name: 'Non-ISA Assets', values: sample(extendedNonIsa.values, indices) },
-    { name: 'Pension (SIPP)', values: sample(extendedPension.values, indices) },
+    { name: 'Pension', values: sample(extendedPension.values, indices) },
     { name: 'Home Equity', values: sample(extendedHome.values, indices) },
   ];
 
@@ -177,6 +180,7 @@ export const buildForecastViewModel = (rawInputs: ForecastInputs): ForecastViewM
 export const defaultInputs: ForecastInputs = {
   income: UK_BASELINE_DEFAULTS.monthlyIncomeAfterTax,
   expenses: UK_BASELINE_DEFAULTS.monthlyExpensesExMortgage,
+  pensionableMonthlyPay: UK_BASELINE_DEFAULTS.monthlyIncomeAfterTax,
   isaAssets: 0,
   isaRate: 7,
   nonIsaAssets: 0,
@@ -194,6 +198,7 @@ export const defaultInputs: ForecastInputs = {
   employerPensionContributionRate: 3,
   pensionInterestRate: 5,
   pensionTaxReliefRate: 20,
+  sippContribution: 0,
   inflationRate: 2,
   wageIncreaseRate: 3,
   extractionRate: 3.9,

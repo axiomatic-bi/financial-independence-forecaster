@@ -74,4 +74,62 @@ describe('calculateForecast', () => {
     expect(result.final_wealth).toBe(0);
     expect(result.withdrawal_39_annual).toBe(0);
   });
+
+  it('applies SIPP tax relief to pension pot but not cashflow deduction', () => {
+    const result = calculateForecast({
+      income: 5000,
+      expenses: 2000,
+      isaAssets: 0,
+      isaRate: 0,
+      nonIsaAssets: 0,
+      nonIsaRate: 0,
+      months: 1,
+      pensionAssets: 10000,
+      pensionableMonthlyPay: 5000,
+      pensionContribution: 0,
+      pensionType: 'fixed',
+      pensionRate: 0,
+      employerPensionContributionRate: 0,
+      sippType: 'fixed',
+      sippContribution: 100,
+      sippRate: 0,
+      pensionInterestRate: 0,
+      pensionTaxReliefRate: 20,
+      inflationRate: 2,
+      wageIncreaseRate: 3,
+      isaAnnualContribution: 20000,
+    });
+
+    expect(result.monthly_savings).toBeCloseTo(2900, 5);
+    expect(result.pension_values[result.pension_values.length - 1]).toBeCloseTo(10120, 5);
+  });
+
+  it('does not double-deduct workplace pension from net-income cashflow', () => {
+    const result = calculateForecast({
+      income: 5000,
+      expenses: 2000,
+      isaAssets: 0,
+      isaRate: 0,
+      nonIsaAssets: 0,
+      nonIsaRate: 0,
+      months: 1,
+      pensionAssets: 10000,
+      pensionableMonthlyPay: 5000,
+      pensionContribution: 5,
+      pensionType: 'percentage',
+      pensionRate: 5,
+      employerPensionContributionRate: 3,
+      sippType: 'fixed',
+      sippContribution: 0,
+      sippRate: 0,
+      pensionInterestRate: 0,
+      pensionTaxReliefRate: 20,
+      inflationRate: 2,
+      wageIncreaseRate: 3,
+      isaAnnualContribution: 20000,
+    });
+
+    expect(result.monthly_savings).toBeCloseTo(3000, 5);
+    expect(result.pension_values[result.pension_values.length - 1]).toBeCloseTo(10400, 5);
+  });
 });
