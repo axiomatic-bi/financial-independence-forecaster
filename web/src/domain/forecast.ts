@@ -7,11 +7,17 @@ const UK_CGT_BASIC_RATE = 0.18;
 
 const orZero = (value: number | null | undefined): number => value ?? 0;
 
-const calculateReliefAtSourceGrossContribution = (netContribution: number): number => {
+const calculateSippReliefAtSource = (netContribution: number, selectedReliefRate: number): { gross: number; extraCashRelief: number } => {
   if (netContribution <= 0) {
-    return 0;
+    return { gross: 0, extraCashRelief: 0 };
   }
-  return netContribution / 0.8;
+  if (selectedReliefRate <= 0) {
+    return { gross: netContribution, extraCashRelief: 0 };
+  }
+  const gross = netContribution / 0.8;
+  const additionalReliefRate = Math.max(0, selectedReliefRate - 20);
+  const extraCashRelief = netContribution * (additionalReliefRate / 100);
+  return { gross, extraCashRelief };
 };
 
 const calculateNonIsaNetWithdrawal = (
@@ -65,7 +71,7 @@ export const calculateMortgagePayment = (
   annualRate: number,
   yearsRemaining: number,
 ): number => {
-  if (balance <= 0 || yearsRemaining <= 0 || annualRate <= 0) {
+  if (balance <= 0 || yearsRemaining <= 0 || annualRate < 0) {
     return 0;
   }
 
@@ -146,7 +152,6 @@ const simulateMonth = (args: SimulateMonthArgs): MonthResult => {
     sippRate,
     pensionTaxReliefRate,
   } = args;
-  void pensionTaxReliefRate;
 
   if (month > 0 && date.getUTCMonth() + 1 === 1) {
     currentExpenses = currentExpenses * (1 + inflationRate / 100);
@@ -165,14 +170,12 @@ const simulateMonth = (args: SimulateMonthArgs): MonthResult => {
   );
   const currentMonthlySippNet = calculateMonthlyPension(currentPensionableIncome, sippType, sippContribution, sippRate);
   const currentMonthlyEmployerPension = currentPensionableIncome * (employerPensionContributionRate / 100);
-  let currentMonthlySippGross = currentMonthlySippNet;
-  if (currentMonthlySippNet > 0) {
-    currentMonthlySippGross = calculateReliefAtSourceGrossContribution(currentMonthlySippNet);
-  }
+  const sippRelief = calculateSippReliefAtSource(currentMonthlySippNet, pensionTaxReliefRate);
+  const currentMonthlySippGross = sippRelief.gross;
   const currentMonthlyPersonalPension = currentMonthlyWorkplacePension + currentMonthlySippNet;
 
   // Net-pay model: take-home income already excludes workplace employee pension deductions.
-  const currentMonthlySavings = currentIncome - currentExpenses - currentMonthlySippNet;
+  const currentMonthlySavings = currentIncome - currentExpenses - currentMonthlySippNet + sippRelief.extraCashRelief;
   if (month > 0) {
     currentIsa = currentIsa * (1 + isaRate / 12);
     currentNonIsa = currentNonIsa * (1 + nonIsaRate / 12);
@@ -276,8 +279,9 @@ export const calculateForecast = (input: {
     pensionRate,
   );
   const monthlySippNet = calculateMonthlyPension(pensionableMonthlyPay, sippType, sippContribution, sippRate);
+  const monthlySippRelief = calculateSippReliefAtSource(monthlySippNet, pensionTaxReliefRate);
   // Net-pay model: only SIPP is deducted from take-home cashflow.
-  const monthlySavings = income - expenses - monthlySippNet;
+  const monthlySavings = income - expenses - monthlySippNet + monthlySippRelief.extraCashRelief;
 
   const dates: string[] = [];
   const totalWealth: number[] = [];
@@ -301,6 +305,7 @@ export const calculateForecast = (input: {
   let currentNonIsaCostBasis = nonIsaCostBasis;
   let isaAnnualUsed = 0;
   let currentMortgageBalance = mortgageBalance;
+  const initialHomeEquity = Math.max(0, homeValue - mortgageBalance);
   let currentHomeEquity = Math.max(0, homeValue - currentMortgageBalance);
 
   let yearsUntilCovered: number | null = null;
@@ -391,7 +396,8 @@ export const calculateForecast = (input: {
 
   const finalWealth = totalWealth[totalWealth.length - 1];
   const finalPension = pensionValues[pensionValues.length - 1];
-  const totalGain = finalWealth - (isaAssets + nonIsaAssets);
+  const initialWealth = isaAssets + nonIsaAssets + pensionAssets + initialHomeEquity;
+  const totalGain = finalWealth - initialWealth;
   const finalIsa = isaValues.length ? isaValues[isaValues.length - 1] : 0;
   const finalNonIsa = nonIsaValues.length ? nonIsaValues[nonIsaValues.length - 1] : 0;
   const finalNonIsaCostBasis = nonIsaCostBasisValues.length

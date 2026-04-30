@@ -13,7 +13,7 @@ describe('forecast domain helpers', () => {
 
   it('returns zero mortgage payment for invalid inputs', () => {
     expect(calculateMortgagePayment(0, 4, 25)).toBe(0);
-    expect(calculateMortgagePayment(250000, 0, 25)).toBe(0);
+    expect(calculateMortgagePayment(250000, 0, 25)).toBeCloseTo(833.3333333, 5);
     expect(calculateMortgagePayment(250000, 4, 0)).toBe(0);
   });
 
@@ -104,6 +104,35 @@ describe('calculateForecast', () => {
     expect(result.pension_values[result.pension_values.length - 1]).toBeCloseTo(10125, 5);
   });
 
+  it('applies higher-rate selected relief as extra cash relief while keeping relief-at-source pension top-up', () => {
+    const result = calculateForecast({
+      income: 5000,
+      expenses: 2000,
+      isaAssets: 0,
+      isaRate: 0,
+      nonIsaAssets: 0,
+      nonIsaRate: 0,
+      months: 1,
+      pensionAssets: 10000,
+      pensionableMonthlyPay: 5000,
+      pensionContribution: 0,
+      pensionType: 'fixed',
+      pensionRate: 0,
+      employerPensionContributionRate: 0,
+      sippType: 'fixed',
+      sippContribution: 100,
+      sippRate: 0,
+      pensionInterestRate: 0,
+      pensionTaxReliefRate: 40,
+      inflationRate: 2,
+      wageIncreaseRate: 3,
+      isaAnnualContribution: 20000,
+    });
+
+    expect(result.monthly_savings).toBeCloseTo(2920, 5);
+    expect(result.pension_values[result.pension_values.length - 1]).toBeCloseTo(10125, 5);
+  });
+
   it('does not double-deduct workplace pension from net-income cashflow', () => {
     const result = calculateForecast({
       income: 5000,
@@ -165,5 +194,22 @@ describe('calculateForecast', () => {
     });
 
     expect(result.withdrawal_39_annual).toBeCloseTo(10836, 5);
+  });
+
+  it('calculates total_gain from full initial wealth baseline', () => {
+    const result = calculateForecast({
+      income: 0,
+      expenses: 0,
+      isaAssets: 10000,
+      isaRate: 0,
+      nonIsaAssets: 5000,
+      nonIsaRate: 0,
+      months: 0,
+      homeValue: 300000,
+      mortgageBalance: 100000,
+      pensionAssets: 25000,
+      pensionInterestRate: 0,
+    });
+    expect(result.total_gain).toBeCloseTo(0, 5);
   });
 });

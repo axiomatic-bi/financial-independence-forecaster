@@ -25,11 +25,20 @@ def calculate_monthly_pension(
     return pension_contribution
 
 
-def calculate_relief_at_source_gross_contribution(net_contribution: float) -> float:
-    """Convert a net SIPP contribution to gross under UK relief-at-source."""
+def calculate_sipp_relief_at_source(
+    net_contribution: float, selected_relief_rate: float
+) -> tuple[float, float]:
+    """Return (gross_pension_addition, extra_cash_relief) for UK SIPP relief-at-source."""
     if net_contribution <= 0:
-        return 0
-    return net_contribution / 0.8
+        return 0, 0
+
+    if selected_relief_rate <= 0:
+        return net_contribution, 0
+
+    gross_contribution = net_contribution / 0.8
+    additional_relief_rate = max(0, selected_relief_rate - 20)
+    additional_cash_relief = net_contribution * (additional_relief_rate / 100)
+    return gross_contribution, additional_cash_relief
 
 
 def calculate_non_isa_net_withdrawal(
@@ -54,7 +63,7 @@ def calculate_non_isa_net_withdrawal(
 
 def calculate_mortgage_payment(balance: float, annual_rate: float, years_remaining: float) -> float:
     """Calculate monthly mortgage payment using the amortization formula."""
-    if balance <= 0 or years_remaining <= 0 or annual_rate <= 0:
+    if balance <= 0 or years_remaining <= 0 or annual_rate < 0:
         return 0
 
     monthly_rate = annual_rate / 12 / 100
@@ -110,14 +119,18 @@ def simulate_month(
         current_pensionable_income, sipp_type, sipp_contribution, sipp_rate
     )
     current_monthly_employer_pension = current_pensionable_income * (employer_pension_contribution_rate / 100)
-    current_monthly_sipp_gross = current_monthly_sipp_net
-
-    if current_monthly_sipp_net > 0:
-        current_monthly_sipp_gross = calculate_relief_at_source_gross_contribution(current_monthly_sipp_net)
+    current_monthly_sipp_gross, current_monthly_sipp_extra_cash_relief = calculate_sipp_relief_at_source(
+        current_monthly_sipp_net, pension_tax_relief_rate
+    )
 
     current_monthly_personal_pension = current_monthly_workplace_pension + current_monthly_sipp_net
     # Net-pay model: take-home income already excludes workplace employee pension deductions.
-    current_monthly_savings = current_income - current_expenses - current_monthly_sipp_net
+    current_monthly_savings = (
+        current_income
+        - current_expenses
+        - current_monthly_sipp_net
+        + current_monthly_sipp_extra_cash_relief
+    )
 
     if month > 0:
         current_isa = current_isa * (1 + isa_rate / 12)
@@ -215,8 +228,11 @@ def calculate_forecast(
     monthly_sipp_net = calculate_monthly_pension(
         pensionable_monthly_pay, sipp_type, sipp_contribution, sipp_rate
     )
+    _, monthly_sipp_extra_cash_relief = calculate_sipp_relief_at_source(
+        monthly_sipp_net, pension_tax_relief_rate
+    )
     # Net-pay model: only SIPP is deducted from take-home cashflow.
-    monthly_savings = income - expenses - monthly_sipp_net
+    monthly_savings = income - expenses - monthly_sipp_net + monthly_sipp_extra_cash_relief
     annual_isa_limit = isa_annual_contribution
 
     dates = []
@@ -241,6 +257,7 @@ def calculate_forecast(
     current_expenses = expenses
     isa_annual_used = 0
     current_mortgage_balance = mortgage_balance
+    initial_home_equity = max(0, home_value - mortgage_balance)
     current_home_equity = max(0, home_value - current_mortgage_balance)
 
     years_until_covered = None
@@ -334,7 +351,8 @@ def calculate_forecast(
 
     final_wealth = total_wealth[-1]
     final_pension = pension_values[-1]
-    total_gain = final_wealth - (isa_assets + non_isa_assets)
+    initial_wealth = isa_assets + non_isa_assets + pension_assets + initial_home_equity
+    total_gain = final_wealth - initial_wealth
 
     final_isa = isa_values[-1] if isa_values else 0
     final_non_isa = non_isa_values[-1] if non_isa_values else 0
