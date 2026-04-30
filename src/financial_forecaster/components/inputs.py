@@ -7,7 +7,6 @@ from financial_forecaster.components.input_sections import (
     build_income_expenses_section,
     build_pension_section,
     build_property_section,
-    build_submit_button,
 )
 from financial_forecaster.styles.inputs import (
     DETAILS_STYLE,
@@ -36,7 +35,6 @@ def create_input_panel():
                         open=False,
                         style=DETAILS_STYLE,
                     ),
-                    build_submit_button(),
                 ],
                 style=PANEL_STYLE,
             )

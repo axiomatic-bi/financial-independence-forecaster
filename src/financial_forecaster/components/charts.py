@@ -2,6 +2,7 @@ import plotly.graph_objs as go
 from dash import dcc, html
 
 from financial_forecaster.theme import COLORS, DATA_COLORS, RADII, SPACING, TYPOGRAPHY, hex_to_rgba
+from financial_forecaster.styles.inputs import PANEL_TITLE_STYLE
 
 HOVER_LABEL_STYLE = {
     "bgcolor": COLORS["surface"],
@@ -14,16 +15,6 @@ SECTION_HEADER_STYLE = {
     "size": 14,
     "color": COLORS["primary"],
 }
-CARD_HEADER_STYLE = {
-    "fontSize": TYPOGRAPHY["size_body"],
-    "color": COLORS["primary"],
-    "margin": f"0 0 {SPACING['lg']} 0",
-    "textTransform": "uppercase",
-    "letterSpacing": TYPOGRAPHY["tracking_label"],
-    "fontWeight": "600",
-}
-
-
 def _format_currency(value: float) -> str:
     return f"£{value:,.0f}"
 
@@ -54,14 +45,7 @@ def _build_table(
         [
             html.H3(
                 title,
-                style={
-                    "fontSize": TYPOGRAPHY["size_body"],
-                    "color": COLORS["primary"],
-                    "margin": f"0 0 {SPACING['lg']} 0",
-                    "textTransform": "uppercase",
-                    "letterSpacing": TYPOGRAPHY["tracking_label"],
-                    "fontWeight": "600",
-                },
+                style=PANEL_TITLE_STYLE,
             ),
             html.Div(
                 [
@@ -118,20 +102,40 @@ def _sample_yearly(values: list[float], indices: list[int]) -> list[float]:
     return [values[i] for i in indices]
 
 
+def _extend_series_to_year_end(dates: list[str], values: list[float]) -> tuple[list[str], list[float]]:
+    """Extend a partial final year to December using recent monthly growth."""
+    if not dates or not values:
+        return dates, values
+
+    last_year, last_month_text = dates[-1].split("-")
+    last_month = int(last_month_text)
+    if last_month == 12:
+        return dates, values
+
+    remaining_months = 12 - last_month
+    if len(values) >= 2 and values[-2] != 0:
+        monthly_growth_factor = values[-1] / values[-2]
+    else:
+        monthly_growth_factor = 1.0
+
+    projected_value = values[-1] * (monthly_growth_factor**remaining_months)
+    extended_dates = [*dates[:-1], f"{last_year}-12"]
+    extended_values = [*values[:-1], projected_value]
+    return extended_dates, extended_values
+
+
 def _sparse_year_ticks(years: list[str], interval: int = 5) -> list[str]:
-    """Return sparse tick labels and include the final forecast year."""
+    """Return sparse tick labels at a fixed interval, excluding final year."""
     if not years:
         return []
-    tick_years = [year for year in years if int(year) % interval == 0]
-    if years[-1] not in tick_years:
-        tick_years.append(years[-1])
-    return tick_years
+    final_year = years[-1]
+    return [year for year in years if int(year) % interval == 0 and year != final_year]
 
 
 def _build_chart_card(title: str, graph_id: str) -> html.Div:
     return html.Div(
         [
-            html.H3(title, style=CARD_HEADER_STYLE),
+            html.H3(title, style=PANEL_TITLE_STYLE),
             dcc.Graph(id=graph_id),
         ],
         className="summary-table-card",
@@ -192,12 +196,19 @@ def build_savings_chart(dates, monthly_savings_values):
 
 
 def build_breakdown_chart(dates, isa_values, non_isa_values, pension_values, home_equity_values=None):
-    indices = _year_end_indices(dates)
-    sampled_years = [dates[i][:4] for i in indices]
+    dates_for_chart, isa_values_for_chart = _extend_series_to_year_end(dates, isa_values)
+    _, non_isa_values_for_chart = _extend_series_to_year_end(dates, non_isa_values)
+    _, pension_values_for_chart = _extend_series_to_year_end(dates, pension_values)
+    home_equity_values_for_chart = None
+    if home_equity_values:
+        _, home_equity_values_for_chart = _extend_series_to_year_end(dates, home_equity_values)
+
+    indices = _year_end_indices(dates_for_chart)
+    sampled_years = [dates_for_chart[i][:4] for i in indices]
     tick_years = _sparse_year_ticks(sampled_years)
-    sampled_isa = _sample_yearly(isa_values, indices)
-    sampled_non_isa = _sample_yearly(non_isa_values, indices)
-    sampled_pension = _sample_yearly(pension_values, indices)
+    sampled_isa = _sample_yearly(isa_values_for_chart, indices)
+    sampled_non_isa = _sample_yearly(non_isa_values_for_chart, indices)
+    sampled_pension = _sample_yearly(pension_values_for_chart, indices)
 
     chart = go.Figure()
     chart.add_trace(
@@ -227,8 +238,8 @@ def build_breakdown_chart(dates, isa_values, non_isa_values, pension_values, hom
             stackgroup="one",
         )
     )
-    if home_equity_values:
-        sampled_home_equity = _sample_yearly(home_equity_values, indices)
+    if home_equity_values_for_chart:
+        sampled_home_equity = _sample_yearly(home_equity_values_for_chart, indices)
         chart.add_trace(
             go.Scatter(
                 x=sampled_years,
@@ -255,10 +266,13 @@ def build_breakdown_chart(dates, isa_values, non_isa_values, pension_values, hom
 
 
 def build_withdrawal_chart(dates, isa_values, expense_values):
-    withdrawal_39_annual = [isa_val * 0.039 for isa_val in isa_values]
-    annual_expenses = [exp * 12 for exp in expense_values]
-    indices = _year_end_indices(dates)
-    sampled_years = [dates[i][:4] for i in indices]
+    dates_for_chart, isa_values_for_chart = _extend_series_to_year_end(dates, isa_values)
+    _, expense_values_for_chart = _extend_series_to_year_end(dates, expense_values)
+
+    withdrawal_39_annual = [isa_val * 0.039 for isa_val in isa_values_for_chart]
+    annual_expenses = [exp * 12 for exp in expense_values_for_chart]
+    indices = _year_end_indices(dates_for_chart)
+    sampled_years = [dates_for_chart[i][:4] for i in indices]
     tick_years = _sparse_year_ticks(sampled_years)
     sampled_withdrawal = _sample_yearly(withdrawal_39_annual, indices)
     sampled_expenses = _sample_yearly(annual_expenses, indices)
@@ -420,7 +434,7 @@ def build_projected_stats(
                 html.P(
                     value,
                     style={
-                        "fontSize": TYPOGRAPHY["size_heading"],
+                        "fontSize": "36px",
                         "fontWeight": "700",
                         "color": COLORS["text_primary"],
                         "margin": "0",

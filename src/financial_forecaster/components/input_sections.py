@@ -5,7 +5,6 @@ from dash import dcc, html
 
 from financial_forecaster.styles.forms import INPUT_STYLE
 from financial_forecaster.styles.inputs import (
-    BUTTON_STYLE,
     LABEL_STYLE,
     SECTION_CONTAINER_STYLE,
     SECTION_HEADING_MARGIN_STYLE,
@@ -217,17 +216,3 @@ def build_forecast_years_section() -> html.Div:
 
 def build_forecast_assumptions_section() -> html.Div:
     return build_fields_group("Forecast Assumptions", FORECAST_ADVANCED_FIELDS)
-
-
-def build_submit_button() -> html.Div:
-    return html.Div(
-        [
-            html.Button(
-                "📊 Calculate Forecast",
-                id="calculate-button",
-                n_clicks=0,
-                style=BUTTON_STYLE,
-            )
-        ],
-        style={"marginTop": "24px"},
-    )
