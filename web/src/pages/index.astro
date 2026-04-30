@@ -1,0 +1,10 @@
+---
+import Layout from '../layouts/Layout.astro';
+import { ForecasterApp } from '../components/ForecasterApp';
+import '../styles/global.css';
+---
+
+<Layout>
+	<div style="padding:8px 12px;color:#9fb1d8;font-family:Inter,Segoe UI,Arial,sans-serif;">Bootstrapping app...</div>
+	<ForecasterApp client:only="react" />
+</Layout>
