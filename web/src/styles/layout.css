@@ -150,14 +150,14 @@
 }
 
 .inputs-subtitle {
-  margin: var(--group-gap) 0 var(--space-2);
-  font-size: 0.85rem;
+  margin: calc(var(--group-gap) + var(--space-5)) 0 var(--space-2);
+  font-size: 0.75rem;
   text-transform: uppercase;
-  color: var(--section-header-color);
-  font-weight: var(--section-header-weight);
-  letter-spacing: 0.05em;
-  padding-top: var(--space-1);
-  border-top: 1px solid color-mix(in srgb, var(--border) 72%, transparent);
+  color: color-mix(in srgb, var(--text-secondary) 84%, transparent);
+  font-weight: 400;
+  letter-spacing: 0.1rem;
+  padding-top: 0;
+  border-top: none;
 }
 
 .panel h2 + .inputs-subtitle {

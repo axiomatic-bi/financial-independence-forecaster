@@ -35,8 +35,9 @@
 .card h3 {
   margin: 0;
   font-size: 0.75rem;
-  text-transform: uppercase;
-  color: var(--text-secondary);
+  text-transform: none;
+  color: color-mix(in srgb, var(--text-secondary) 84%, transparent);
+  font-weight: 400;
 }
 
 .kpi-value { margin: var(--space-1) 0 0; font-size: 2.2rem; font-weight: 500; line-height: 1.1; }

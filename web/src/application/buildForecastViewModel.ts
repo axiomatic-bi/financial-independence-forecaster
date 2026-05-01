@@ -279,7 +279,7 @@ export const buildForecastViewModel = (rawInputs: ForecastInputs): ForecastViewM
 
   return {
     kpis: [
-      { label: 'FI Date', value: fiResult.fi_date ?? 'Not reached' },
+      { label: 'Financial Independence (FI) Date', value: fiResult.fi_date ?? 'Not reached' },
       { label: 'Years Until FI', value: yearsText },
       { label: `Passive Income at FI (${extractionRateLabel(fiResult.extraction_rate)})`, value: currency(fiWithdrawalAnnual) },
       { label: 'Savings Rate at FI', value: percent(fiSavingsRate) },

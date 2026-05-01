@@ -57,7 +57,7 @@ const fiBasisTooltipText = (extractionRate: number) =>
   `Financial independence (FI) here means annual ISA + non-ISA withdrawal at ${extractionRate.toFixed(1)}% covers annual expenses; pension and home equity are excluded.`;
 
 export const kpiTooltipText = (label: string, extractionRate: number): string | null => {
-  if (label === 'FI Date') {
+  if (label === 'Financial Independence (FI) Date') {
     return `Estimated month when FI is first reached under your current assumptions. ${fiBasisTooltipText(extractionRate)}`;
   }
   if (label === 'Years Until FI') {
