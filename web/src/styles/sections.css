@@ -43,7 +43,8 @@
 
 .card h3 {
   margin: 0;
-  font-size: 0.75rem;
+  font-size: 0.9rem;
+  line-height: 1.35;
   text-transform: none;
   color: color-mix(in srgb, var(--text-secondary) 84%, transparent);
   font-weight: 400;
@@ -51,8 +52,7 @@
 
 .kpis .card h3 {
   padding-right: 20px;
-  line-height: 1.2;
-  height: calc(2 * 1.2em);
+  height: calc(2 * 1.35em);
   overflow: hidden;
 }
 

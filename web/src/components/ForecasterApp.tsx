@@ -31,20 +31,26 @@ const onboardingSteps: OnboardingStep[] = [
   },
   {
     key: 'engine-room-income',
-    targetSelector: '[data-tour-target="inputs-income"]',
+    targetSelector: '[data-tour-target="inputs-income-section"]',
     text: 'Start by entering your Net Monthly Income (Post-Tax/Pension) and core outgoings. This defines your Monthly Surplus for investment.',
     openInputsPanel: true,
   },
   {
     key: 'wealth-stack-assets',
-    targetSelector: '[data-tour-target="inputs-current-assets"]',
+    targetSelector: '[data-tour-target="inputs-current-assets-section"]',
     text: 'Add your current Individual Savings Account (ISA) and Pension Pot values. This populates your starting wealth for the modelling engine.',
     openInputsPanel: true,
   },
   {
-    key: 'insight-loop-chart',
-    targetSelector: '[data-tour-target="passive-income-chart"]',
-    text: 'Watch the chart update in real-time. The FI Crossover point marks where your Safe Withdrawal Capacity covers your inflation-adjusted expenses.',
+    key: 'advanced-inputs',
+    targetSelector: '[data-tour-target="inputs-advanced-section"]',
+    text: 'Use Advanced Inputs to refine assumptions like property, pension setup, and forecast controls for a more realistic plan.',
+    openInputsPanel: true,
+  },
+  {
+    key: 'insight-loop-kpis',
+    targetSelector: '[data-tour-target="kpi-strip"]',
+    text: 'As you adjust inputs, your key metrics update instantly. Focus on FI date, years to FI, and income coverage to compare scenarios quickly.',
     openInputsPanel: false,
   },
 ];
@@ -334,17 +340,19 @@ export const ForecasterApp = () => {
         <div className="main-body">
           <section className="content">
             <header className="hero">
-              <h1>Financial independence forecaster</h1>
-              <p>Model your path to financial independence with scenario-based projections</p>
-              <div className="hero-actions">
-                <a
-                  className="button button-secondary"
-                  href="https://github.com/axiomatic-bi/financial-independence-forecaster"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                >
-                  Contribute on GitHub
-                </a>
+              <div className="hero-inner">
+                <h1>Financial independence forecaster</h1>
+                <p>Model your path to financial independence with scenario-based projections</p>
+                <div className="hero-actions">
+                  <a
+                    className="button button-secondary"
+                    href="https://github.com/axiomatic-bi/financial-independence-forecaster"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                  >
+                    Contribute on GitHub
+                  </a>
+                </div>
               </div>
             </header>
             <KpiCards vm={presentation.vm} extractionRate={inputs.extractionRate} />

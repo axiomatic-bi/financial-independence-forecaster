@@ -72,8 +72,12 @@
   }
 
   .hero {
-    padding-left: var(--mobile-gutter);
-    padding-right: var(--mobile-gutter);
+    padding-left: 0;
+    padding-right: 0;
+  }
+
+  .hero-inner {
+    width: calc(100% - (2 * var(--mobile-gutter)));
   }
 
   .content > .hero {

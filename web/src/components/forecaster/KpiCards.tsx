@@ -7,7 +7,7 @@ interface KpiCardsProps {
 }
 
 export const KpiCards = ({ vm, extractionRate }: KpiCardsProps) => (
-  <section className="kpis">
+  <section className="kpis" data-tour-target="kpi-strip">
     <div className="kpis-inner">
       {vm.kpis.map((card) => (
         <article key={card.label} className="card">

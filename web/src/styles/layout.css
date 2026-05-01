@@ -6,11 +6,15 @@
 }
 
 .hero {
-  padding: var(--space-6);
-  padding-left: var(--space-4);
+  padding: calc(var(--section-band-padding) / 2) 0;
   background: var(--hero-scene-bg);
   border-bottom: 1px solid var(--border);
   box-shadow: inset 0 -40px 80px rgba(6, 10, 20, 0.45);
+}
+
+.hero-inner {
+  width: min(calc(var(--content-max-width) + 120px), calc(100% - (2 * var(--space-6))));
+  margin: 0 auto;
 }
 
 .content > .hero {

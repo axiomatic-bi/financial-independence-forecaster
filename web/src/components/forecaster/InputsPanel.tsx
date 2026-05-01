@@ -75,35 +75,35 @@ export const InputsPanel = ({ inputs, elapsedMs, isOpen, onInputsChange, onClose
   return (
     <aside id="inputs-panel" className={`panel${isOpen ? ' is-open' : ''}`}>
       <h2>Inputs</h2>
-      <h3 className="inputs-subtitle" data-tour-target="inputs-income">
-        Income
-      </h3>
-      {incomeFields.map(({ key, label, step }) => (
-        <NumberInputField
-          key={key}
-          inputKey={key}
-          label={label}
-          step={step}
-          value={inputs[key] as number}
-          onFocus={handleNumberFocus}
-          onInputsChange={onInputsChange}
-        />
-      ))}
+      <section className="tour-input-section" data-tour-target="inputs-income-section">
+        <h3 className="inputs-subtitle">Income</h3>
+        {incomeFields.map(({ key, label, step }) => (
+          <NumberInputField
+            key={key}
+            inputKey={key}
+            label={label}
+            step={step}
+            value={inputs[key] as number}
+            onFocus={handleNumberFocus}
+            onInputsChange={onInputsChange}
+          />
+        ))}
+      </section>
 
-      <h3 className="inputs-subtitle" data-tour-target="inputs-current-assets">
-        Current assets
-      </h3>
-      {currentAssetsFields.map(({ key, label, step }) => (
-        <NumberInputField
-          key={key}
-          inputKey={key}
-          label={label}
-          step={step}
-          value={inputs[key] as number}
-          onFocus={handleNumberFocus}
-          onInputsChange={onInputsChange}
-        />
-      ))}
+      <section className="tour-input-section" data-tour-target="inputs-current-assets-section">
+        <h3 className="inputs-subtitle">Current assets</h3>
+        {currentAssetsFields.map(({ key, label, step }) => (
+          <NumberInputField
+            key={key}
+            inputKey={key}
+            label={label}
+            step={step}
+            value={inputs[key] as number}
+            onFocus={handleNumberFocus}
+            onInputsChange={onInputsChange}
+          />
+        ))}
+      </section>
 
       <h3 className="inputs-subtitle">Growth assumptions</h3>
       {growthAssumptionsFields.map(({ key, label, step }) => (
@@ -140,91 +140,93 @@ export const InputsPanel = ({ inputs, elapsedMs, isOpen, onInputsChange, onClose
         <small className="range-value">{inputs.forecastYears} years</small>
       </div>
 
-      <h3 className="inputs-subtitle">Advanced inputs</h3>
+      <section className="tour-input-section" data-tour-target="inputs-advanced-section">
+        <h3 className="inputs-subtitle">Advanced inputs</h3>
 
-      <details className="advanced-group">
-        <summary>Property & mortgage</summary>
-        {propertyFields.map(({ key, label, step }) => (
-          <NumberInputField
-            key={key}
-            inputKey={key}
-            label={label}
-            step={step}
-            value={inputs[key] as number}
-            onFocus={handleNumberFocus}
-            onInputsChange={onInputsChange}
-          />
-        ))}
-      </details>
+        <details className="advanced-group">
+          <summary>Property & mortgage</summary>
+          {propertyFields.map(({ key, label, step }) => (
+            <NumberInputField
+              key={key}
+              inputKey={key}
+              label={label}
+              step={step}
+              value={inputs[key] as number}
+              onFocus={handleNumberFocus}
+              onInputsChange={onInputsChange}
+            />
+          ))}
+        </details>
 
-      <details className="advanced-group">
-        <summary>Pension</summary>
-        <div className="field">
-          <label htmlFor="input-pensionType" className="label-with-info">
-            <span>Contribution type</span>
-          </label>
-          <select
-            id="input-pensionType"
-            name="input-pensionType"
-            value={inputs.pensionType}
-            onChange={(event) => onInputsChange((prev) => ({ ...prev, pensionType: event.target.value as ForecastInputs['pensionType'] }))}
-          >
-            <option value="percentage">Percentage of pensionable pay</option>
-            <option value="fixed">Fixed amount</option>
-          </select>
-        </div>
-        {pensionFields.map(({ key, label, step }) => (
-          <NumberInputField
-            key={key}
-            inputKey={key}
-            label={label}
-            step={step}
-            value={inputs[key] as number}
-            onFocus={handleNumberFocus}
-            onInputsChange={onInputsChange}
-          />
-        ))}
-        <div className="field">
-          {renderInputLabel('pensionTaxReliefRate', 'Pension tax relief')}
-          <select
-            id="input-pensionTaxReliefRate"
-            name="input-pensionTaxReliefRate"
-            value={inputs.pensionTaxReliefRate}
-            onChange={(event) => onInputsChange((prev) => ({ ...prev, pensionTaxReliefRate: Number(event.target.value) }))}
-          >
-            <option value={0}>No relief (0%)</option>
-            <option value={20}>Basic rate (20%)</option>
-            <option value={40}>Higher rate (40%)</option>
-            <option value={45}>Additional rate (45%)</option>
-          </select>
-        </div>
-        {sippFields.map(({ key, label, step }) => (
-          <NumberInputField
-            key={key}
-            inputKey={key}
-            label={label}
-            step={step}
-            value={inputs[key] as number}
-            onFocus={handleNumberFocus}
-            onInputsChange={onInputsChange}
-          />
-        ))}
-      </details>
+        <details className="advanced-group">
+          <summary>Pension</summary>
+          <div className="field">
+            <label htmlFor="input-pensionType" className="label-with-info">
+              <span>Contribution type</span>
+            </label>
+            <select
+              id="input-pensionType"
+              name="input-pensionType"
+              value={inputs.pensionType}
+              onChange={(event) => onInputsChange((prev) => ({ ...prev, pensionType: event.target.value as ForecastInputs['pensionType'] }))}
+            >
+              <option value="percentage">Percentage of pensionable pay</option>
+              <option value="fixed">Fixed amount</option>
+            </select>
+          </div>
+          {pensionFields.map(({ key, label, step }) => (
+            <NumberInputField
+              key={key}
+              inputKey={key}
+              label={label}
+              step={step}
+              value={inputs[key] as number}
+              onFocus={handleNumberFocus}
+              onInputsChange={onInputsChange}
+            />
+          ))}
+          <div className="field">
+            {renderInputLabel('pensionTaxReliefRate', 'Pension tax relief')}
+            <select
+              id="input-pensionTaxReliefRate"
+              name="input-pensionTaxReliefRate"
+              value={inputs.pensionTaxReliefRate}
+              onChange={(event) => onInputsChange((prev) => ({ ...prev, pensionTaxReliefRate: Number(event.target.value) }))}
+            >
+              <option value={0}>No relief (0%)</option>
+              <option value={20}>Basic rate (20%)</option>
+              <option value={40}>Higher rate (40%)</option>
+              <option value={45}>Additional rate (45%)</option>
+            </select>
+          </div>
+          {sippFields.map(({ key, label, step }) => (
+            <NumberInputField
+              key={key}
+              inputKey={key}
+              label={label}
+              step={step}
+              value={inputs[key] as number}
+              onFocus={handleNumberFocus}
+              onInputsChange={onInputsChange}
+            />
+          ))}
+        </details>
 
-      <details className="advanced-group">
-        <summary>Forecast assumptions</summary>
-        {advancedAssumptionsFields.map(({ key, label, step }) => (
-          <NumberInputField
-            key={key}
-            inputKey={key}
-            label={label}
-            step={step}
-            value={inputs[key] as number}
-            onFocus={handleNumberFocus}
-            onInputsChange={onInputsChange}
-          />
-        ))}
-      </details>
+        <details className="advanced-group">
+          <summary>Forecast assumptions</summary>
+          {advancedAssumptionsFields.map(({ key, label, step }) => (
+            <NumberInputField
+              key={key}
+              inputKey={key}
+              label={label}
+              step={step}
+              value={inputs[key] as number}
+              onFocus={handleNumberFocus}
+              onInputsChange={onInputsChange}
+            />
+          ))}
+        </details>
+      </section>
       <p className="perf">Recompute latency: {elapsedMs.toFixed(1)}ms</p>
       <div className="mobile-panel-close-wrap">
         <button type="button" className="button button-primary mobile-panel-close-button" onClick={onCloseMobilePanel}>
