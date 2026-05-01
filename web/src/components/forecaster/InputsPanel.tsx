@@ -65,7 +65,7 @@ const NumberInputField = ({
   </div>
 );
 
-export const InputsPanel = ({ inputs, elapsedMs, isOpen, onInputsChange }: InputsPanelProps) => {
+export const InputsPanel = ({ inputs, elapsedMs, isOpen, onInputsChange, onCloseMobilePanel }: InputsPanelProps) => {
   const handleNumberFocus = (event: FocusEvent<HTMLInputElement>) => {
     if (Number(event.target.value) === 0) {
       event.target.select();
@@ -75,7 +75,9 @@ export const InputsPanel = ({ inputs, elapsedMs, isOpen, onInputsChange }: Input
   return (
     <aside id="inputs-panel" className={`panel${isOpen ? ' is-open' : ''}`}>
       <h2>Inputs</h2>
-      <h3 className="inputs-subtitle">Income</h3>
+      <h3 className="inputs-subtitle" data-tour-target="inputs-income">
+        Income
+      </h3>
       {incomeFields.map(({ key, label, step }) => (
         <NumberInputField
           key={key}
@@ -88,7 +90,9 @@ export const InputsPanel = ({ inputs, elapsedMs, isOpen, onInputsChange }: Input
         />
       ))}
 
-      <h3 className="inputs-subtitle">Current assets</h3>
+      <h3 className="inputs-subtitle" data-tour-target="inputs-current-assets">
+        Current assets
+      </h3>
       {currentAssetsFields.map(({ key, label, step }) => (
         <NumberInputField
           key={key}
@@ -222,6 +226,11 @@ export const InputsPanel = ({ inputs, elapsedMs, isOpen, onInputsChange }: Input
         ))}
       </details>
       <p className="perf">Recompute latency: {elapsedMs.toFixed(1)}ms</p>
+      <div className="mobile-panel-close-wrap">
+        <button type="button" className="button button-primary mobile-panel-close-button" onClick={onCloseMobilePanel}>
+          Apply changes
+        </button>
+      </div>
     </aside>
   );
 };

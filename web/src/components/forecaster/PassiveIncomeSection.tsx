@@ -47,7 +47,7 @@ export const PassiveIncomeSection = ({ data, dataColors, isaAnnualContribution, 
           </em>
         </p>
       </div>
-      <article className="plot-card">
+      <article className="plot-card" data-tour-target="passive-income-chart">
         <h4 className="section-subheading">Potential passive income vs projected expenses</h4>
         <div className="chart-wrap">
           <ResponsiveContainer width="100%" height={360}>

@@ -91,4 +91,5 @@ export interface InputsPanelProps {
   elapsedMs: number;
   isOpen: boolean;
   onInputsChange: Dispatch<SetStateAction<ForecastInputs>>;
+  onCloseMobilePanel: () => void;
 }

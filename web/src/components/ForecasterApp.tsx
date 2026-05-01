@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 
 import { buildForecastViewModel, defaultInputs } from '../application/buildForecastViewModel';
 import { buildForecasterPresentation } from '../application/buildForecasterPresentation';
@@ -13,6 +13,41 @@ import type { DataColors, ForecasterPresentation } from './forecaster/types';
 import type { ForecastInputs } from '../types/forecast';
 
 const INPUTS_STORAGE_KEY = 'financial-forecaster:inputs';
+const ONBOARDING_STORAGE_KEY = 'financial-forecaster:onboarding-complete';
+
+interface OnboardingStep {
+  key: string;
+  targetSelector: string;
+  text: string;
+  openInputsPanel?: boolean;
+}
+
+const onboardingSteps: OnboardingStep[] = [
+  {
+    key: 'mobile-entry-point',
+    targetSelector: '[data-tour-target="open-inputs-trigger"]',
+    text: 'Begin by opening the Inputs panel to define your financial variables.',
+    openInputsPanel: false,
+  },
+  {
+    key: 'engine-room-income',
+    targetSelector: '[data-tour-target="inputs-income"]',
+    text: 'Start by entering your Net Monthly Income (Post-Tax/Pension) and core outgoings. This defines your Monthly Surplus for investment.',
+    openInputsPanel: true,
+  },
+  {
+    key: 'wealth-stack-assets',
+    targetSelector: '[data-tour-target="inputs-current-assets"]',
+    text: 'Add your current Individual Savings Account (ISA) and Pension Pot values. This populates your starting wealth for the modelling engine.',
+    openInputsPanel: true,
+  },
+  {
+    key: 'insight-loop-chart',
+    targetSelector: '[data-tour-target="passive-income-chart"]',
+    text: 'Watch the chart update in real-time. The FI Crossover point marks where your Safe Withdrawal Capacity covers your inflation-adjusted expenses.',
+    openInputsPanel: false,
+  },
+];
 const nonNegativeOrDefault = (value: number, fallback: number): number => {
   if (!Number.isFinite(value)) {
     return fallback;
@@ -145,8 +180,53 @@ export const ForecasterApp = () => {
   const [expandedAssetGroups, setExpandedAssetGroups] = useState<Record<string, boolean>>({
     investments: false,
   });
+  const [isOnboardingActive, setIsOnboardingActive] = useState(false);
+  const [onboardingStepIndex, setOnboardingStepIndex] = useState(0);
+  const [spotlightRect, setSpotlightRect] = useState<null | { top: number; left: number; width: number; height: number }>(null);
 
   const dataColors = useDataColors();
+  const currentOnboardingStep = onboardingSteps[onboardingStepIndex] ?? null;
+
+  const completeOnboarding = useCallback(() => {
+    setIsOnboardingActive(false);
+    setSpotlightRect(null);
+    if (typeof window !== 'undefined') {
+      window.localStorage.setItem(ONBOARDING_STORAGE_KEY, 'true');
+    }
+  }, []);
+
+  const refreshSpotlight = useCallback(() => {
+    if (!isOnboardingActive || !currentOnboardingStep) {
+      return;
+    }
+    const target = document.querySelector(currentOnboardingStep.targetSelector);
+    if (!(target instanceof HTMLElement)) {
+      return;
+    }
+    target.scrollIntoView({ block: 'center', inline: 'nearest', behavior: 'smooth' });
+    window.setTimeout(() => {
+      const rect = target.getBoundingClientRect();
+      const padding = 8;
+      setSpotlightRect({
+        top: Math.max(0, rect.top - padding),
+        left: Math.max(0, rect.left - padding),
+        width: Math.max(0, rect.width + padding * 2),
+        height: Math.max(0, rect.height + padding * 2),
+      });
+    }, 140);
+  }, [currentOnboardingStep, isOnboardingActive]);
+
+  const goToNextOnboardingStep = useCallback(() => {
+    if (onboardingStepIndex >= onboardingSteps.length - 1) {
+      completeOnboarding();
+      return;
+    }
+    setOnboardingStepIndex((prev) => prev + 1);
+  }, [completeOnboarding, onboardingStepIndex]);
+
+  const goToPreviousOnboardingStep = useCallback(() => {
+    setOnboardingStepIndex((prev) => Math.max(0, prev - 1));
+  }, []);
 
   const vmResult = useMemo(() => {
     try {
@@ -167,6 +247,40 @@ export const ForecasterApp = () => {
     window.localStorage.setItem(INPUTS_STORAGE_KEY, JSON.stringify(inputs));
   }, [inputs]);
 
+  useEffect(() => {
+    if (typeof window === 'undefined') {
+      return;
+    }
+    const onboardingCompleted = window.localStorage.getItem(ONBOARDING_STORAGE_KEY) === 'true';
+    if (onboardingCompleted) {
+      return;
+    }
+    const isMobile = window.matchMedia('(max-width: 960px)').matches;
+    setOnboardingStepIndex(isMobile ? 0 : 1);
+    setIsOnboardingActive(true);
+  }, []);
+
+  useEffect(() => {
+    if (!isOnboardingActive || !currentOnboardingStep) {
+      return;
+    }
+    const isMobile = window.matchMedia('(max-width: 960px)').matches;
+    if (currentOnboardingStep.openInputsPanel) {
+      setIsInputsOpen(true);
+    } else if (isMobile) {
+      setIsInputsOpen(false);
+    }
+    refreshSpotlight();
+
+    const handleViewportChange = () => refreshSpotlight();
+    window.addEventListener('resize', handleViewportChange);
+    window.addEventListener('scroll', handleViewportChange, true);
+    return () => {
+      window.removeEventListener('resize', handleViewportChange);
+      window.removeEventListener('scroll', handleViewportChange, true);
+    };
+  }, [currentOnboardingStep, isOnboardingActive, refreshSpotlight]);
+
   if (vmResult.error || !vmResult.vm) {
     return (
       <div className="app-error">
@@ -180,12 +294,24 @@ export const ForecasterApp = () => {
   const passiveIncomeAdvice = buildPassiveIncomeAdvice(presentation);
   const assetsAdvice = buildAssetsAdvice(presentation);
   const savingsAdvice = buildSavingsAdvice(inputs, presentation);
+  const isFinalOnboardingStep = onboardingStepIndex === onboardingSteps.length - 1;
+  const viewportWidth = typeof window === 'undefined' ? 1280 : window.innerWidth;
+  const viewportHeight = typeof window === 'undefined' ? 720 : window.innerHeight;
+  const tooltipWidth = Math.min(360, Math.max(260, viewportWidth - 32));
+  const tooltipLeft = spotlightRect
+    ? Math.min(Math.max(16, spotlightRect.left + spotlightRect.width / 2 - tooltipWidth / 2), Math.max(16, viewportWidth - tooltipWidth - 16))
+    : 16;
+  const shouldPlaceTooltipAbove = spotlightRect
+    ? spotlightRect.top + spotlightRect.height + 240 > viewportHeight && spotlightRect.top > 220
+    : false;
+  const tooltipTop = spotlightRect ? (shouldPlaceTooltipAbove ? Math.max(16, spotlightRect.top - 170) : spotlightRect.top + spotlightRect.height + 14) : 16;
 
   return (
     <div className="app">
       <button
         type="button"
         className="panel-toggle"
+        data-tour-target="open-inputs-trigger"
         aria-expanded={isInputsOpen}
         aria-controls="inputs-panel"
         onClick={() => setIsInputsOpen((prev) => !prev)}
@@ -203,6 +329,7 @@ export const ForecasterApp = () => {
           elapsedMs={vmResult.elapsedMs}
           isOpen={isInputsOpen}
           onInputsChange={setInputs}
+          onCloseMobilePanel={() => setIsInputsOpen(false)}
         />
         <div className="main-body">
           <section className="content">
@@ -255,6 +382,77 @@ export const ForecasterApp = () => {
           </section>
         </div>
       </div>
+      {isOnboardingActive && spotlightRect && currentOnboardingStep ? (
+        <div className="onboarding-layer" role="dialog" aria-modal="true" aria-label="Onboarding guide">
+          <div
+            className="onboarding-dim onboarding-dim--top"
+            style={{ left: 0, top: 0, width: '100vw', height: `${spotlightRect.top}px` }}
+          />
+          <div
+            className="onboarding-dim onboarding-dim--left"
+            style={{ left: 0, top: `${spotlightRect.top}px`, width: `${spotlightRect.left}px`, height: `${spotlightRect.height}px` }}
+          />
+          <div
+            className="onboarding-dim onboarding-dim--right"
+            style={{
+              left: `${spotlightRect.left + spotlightRect.width}px`,
+              top: `${spotlightRect.top}px`,
+              width: `${Math.max(0, viewportWidth - spotlightRect.left - spotlightRect.width)}px`,
+              height: `${spotlightRect.height}px`,
+            }}
+          />
+          <div
+            className="onboarding-dim onboarding-dim--bottom"
+            style={{
+              left: 0,
+              top: `${spotlightRect.top + spotlightRect.height}px`,
+              width: '100vw',
+              height: `${Math.max(0, viewportHeight - spotlightRect.top - spotlightRect.height)}px`,
+            }}
+          />
+          <div
+            className="onboarding-spotlight-ring"
+            aria-hidden="true"
+            style={{
+              left: `${spotlightRect.left}px`,
+              top: `${spotlightRect.top}px`,
+              width: `${spotlightRect.width}px`,
+              height: `${spotlightRect.height}px`,
+            }}
+          />
+          <section
+            className="onboarding-tooltip"
+            style={{
+              width: `${tooltipWidth}px`,
+              left: `${tooltipLeft}px`,
+              top: `${tooltipTop}px`,
+            }}
+          >
+            <p className="onboarding-tooltip-step">
+              Step {onboardingStepIndex} of {onboardingSteps.length - 1}
+            </p>
+            <p>{currentOnboardingStep.text}</p>
+            <div className="onboarding-tooltip-actions">
+              <button type="button" className="button button-secondary" onClick={completeOnboarding}>
+                Skip
+              </button>
+              <div className="onboarding-tooltip-progress-actions">
+                <button
+                  type="button"
+                  className="button button-secondary"
+                  disabled={onboardingStepIndex === 0}
+                  onClick={goToPreviousOnboardingStep}
+                >
+                  Back
+                </button>
+                <button type="button" className="button button-primary" onClick={goToNextOnboardingStep}>
+                  {isFinalOnboardingStep ? 'Finish' : 'Next'}
+                </button>
+              </div>
+            </div>
+          </section>
+        </div>
+      ) : null}
     </div>
   );
 };

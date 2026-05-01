@@ -52,6 +52,25 @@
     padding-right: var(--mobile-gutter);
   }
 
+  .mobile-panel-close-wrap {
+    display: block;
+    position: sticky;
+    bottom: 0;
+    padding-top: var(--space-2);
+    padding-bottom: calc(var(--space-2) + env(safe-area-inset-bottom, 0px));
+    background: linear-gradient(
+      to bottom,
+      color-mix(in srgb, var(--bg) 0%, transparent) 0%,
+      color-mix(in srgb, var(--bg) 84%, transparent) 32%,
+      var(--bg) 100%
+    );
+    z-index: 2;
+  }
+
+  .mobile-panel-close-button {
+    width: 100%;
+  }
+
   .hero {
     padding-left: var(--mobile-gutter);
     padding-right: var(--mobile-gutter);
