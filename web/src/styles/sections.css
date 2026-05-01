@@ -417,7 +417,7 @@ th:first-child, td:first-child { text-align: left; }
 .table-expand-button {
   display: inline-flex;
   align-items: center;
-  gap: 8px;
+  gap: 4px;
   border: none;
   background: transparent;
   color: inherit;
@@ -427,19 +427,24 @@ th:first-child, td:first-child { text-align: left; }
 }
 
 .table-expand-icon {
-  width: 16px;
-  height: 16px;
-  border: 1px solid var(--border);
-  border-radius: 4px;
+  width: 14px;
+  height: 14px;
   display: inline-grid;
   place-items: center;
 }
 
 .table-expand-symbol {
   display: block;
-  font-size: 0.78rem;
+  font-size: 1rem;
   line-height: 1;
-  font-weight: 600;
+  font-weight: 500;
+  transform: rotate(0deg);
+  transform-origin: center;
+  transition: transform 140ms ease;
+}
+
+.table-expand-button[aria-expanded='true'] .table-expand-symbol {
+  transform: rotate(90deg);
 }
 
 .table-detail-row td:first-child {

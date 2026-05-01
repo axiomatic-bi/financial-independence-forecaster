@@ -32,7 +32,7 @@ export const PassiveIncomeSection = ({ data, dataColors, isaAnnualContribution, 
           </li>
         </ul>
         <div className="section-advice section-advice--passive">
-          <p className="section-advice-title">Tip tips</p>
+          <p className="section-advice-title">Insights</p>
           <ul>
             {advice.map((item) => (
               <li key={item}>{item}</li>

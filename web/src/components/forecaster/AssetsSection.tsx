@@ -70,7 +70,7 @@ export const AssetsSection = ({ data, dataColors, advice, expandedAssetGroups, o
         </li>
       </ul>
       <div className="section-advice section-advice--assets">
-        <p className="section-advice-title">Tip tips</p>
+        <p className="section-advice-title">Insights</p>
         <ul>
           {advice.map((item) => (
             <li key={item}>{item}</li>
@@ -144,7 +144,7 @@ const AssetsTable = ({
                 aria-label={expandedAssetGroups.investments ? 'Collapse investments' : 'Expand investments'}
               >
                 <span className="table-expand-icon" aria-hidden="true">
-                  <span className="table-expand-symbol">{expandedAssetGroups.investments ? '-' : '+'}</span>
+                  <span className="table-expand-symbol">›</span>
                 </span>
                 <span>Investments</span>
               </button>

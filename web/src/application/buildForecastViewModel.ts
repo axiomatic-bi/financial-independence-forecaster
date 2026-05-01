@@ -14,6 +14,19 @@ const percent = (value: number): string => `${finiteOrZero(value).toFixed(1)}%`;
 const extractionRateLabel = (value: number): string => `${finiteOrZero(value).toFixed(1)}%`;
 const years = (value: number): string => `${finiteOrZero(value).toFixed(1)}y`;
 const ratio = (value: number): string => `${finiteOrZero(value).toFixed(2)}x`;
+const MONTH_ABBREVIATIONS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'] as const;
+
+const formatKpiMonthYear = (dateValue: string | null): string => {
+  if (!dateValue) {
+    return 'Not reached';
+  }
+  const [yearPart, monthPart] = dateValue.split('-');
+  const monthIndex = Number(monthPart) - 1;
+  if (!yearPart || !Number.isInteger(monthIndex) || monthIndex < 0 || monthIndex > 11) {
+    return dateValue;
+  }
+  return `${MONTH_ABBREVIATIONS[monthIndex]} ${yearPart}`;
+};
 
 const safeValue = (values: number[], index: number): number => {
   if (!values.length) return 0;
@@ -279,7 +292,7 @@ export const buildForecastViewModel = (rawInputs: ForecastInputs): ForecastViewM
 
   return {
     kpis: [
-      { label: 'Financial independence (FI) date', value: fiResult.fi_date ?? 'Not reached' },
+      { label: 'Financial independence (FI) date', value: formatKpiMonthYear(fiResult.fi_date) },
       { label: 'Years until FI', value: yearsText },
       { label: `Passive income at FI (${extractionRateLabel(fiResult.extraction_rate)})`, value: currency(fiWithdrawalAnnual) },
       { label: 'Savings rate at FI', value: percent(fiSavingsRate) },

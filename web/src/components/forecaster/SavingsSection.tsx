@@ -77,7 +77,7 @@ export const SavingsSection = ({ data, dataColors, advice, expandedSavingsGroups
             </li>
           </ul>
           <div className="section-advice section-advice--savings">
-            <p className="section-advice-title">Tip tips</p>
+            <p className="section-advice-title">Insights</p>
             <ul>
               {advice.map((item) => (
                 <li key={item}>{item}</li>
@@ -145,7 +145,7 @@ export const SavingsSection = ({ data, dataColors, advice, expandedSavingsGroups
                         aria-label={expandedSavingsGroups[row.key] ? `Collapse ${row.label}` : `Expand ${row.label}`}
                       >
                         <span className="table-expand-icon" aria-hidden="true">
-                          <span className="table-expand-symbol">{expandedSavingsGroups[row.key] ? '-' : '+'}</span>
+                          <span className="table-expand-symbol">›</span>
                         </span>
                         <span>{row.label}</span>
                       </button>
