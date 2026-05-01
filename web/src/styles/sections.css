@@ -194,7 +194,7 @@
   margin-top: var(--space-2);
 }
 
-.assumption-note {
+.narrative-copy p.assumption-note {
   color: color-mix(in srgb, var(--text-secondary) 84%, transparent);
   font-size: 0.75rem;
   letter-spacing: 0.01em;

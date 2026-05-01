@@ -1,4 +1,11 @@
 @media (max-width: 960px) {
+  .panel-toggle {
+    display: inline-flex;
+    position: sticky;
+    top: 0;
+    z-index: 60;
+  }
+
   .app {
     height: auto;
     min-height: 100vh;
@@ -10,8 +17,6 @@
     overflow: visible;
   }
 
-  .panel-toggle { display: inline-flex; }
-
   .panel {
     width: 100%;
     max-height: none;
@@ -22,6 +27,19 @@
 
   .panel:not(.is-open) {
     display: none;
+  }
+
+  .panel.is-open {
+    position: fixed;
+    inset: 0;
+    width: 100vw;
+    height: 100dvh;
+    z-index: 50;
+    overflow-y: auto;
+    overflow-x: hidden;
+    border-bottom: 0;
+    background: var(--bg);
+    padding-top: calc(var(--space-4) + 40px);
   }
 
   .kpis {
