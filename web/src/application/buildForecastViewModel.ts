@@ -60,14 +60,25 @@ const calculateNonIsaNetWithdrawal = (nonIsaValue: number, nonIsaCostBasis: numb
   return Math.max(0, grossWithdrawal - cgtDue);
 };
 
-const buildFinanceRows = (result: ForecastResult): TableRow[] => {
+const buildFinanceRows = (result: ForecastResult, isaAnnualContribution: number): TableRow[] => {
   const maxMonth = result.income_values.length - 1;
   const fiMonth = result.fi_month_index ?? maxMonth;
+  const monthlyIsaCap = Math.max(0, isaAnnualContribution / 12);
+  const monthlySurplusIsaValues = result.monthly_savings_values.map((value) => Math.max(0, Math.min(value, monthlyIsaCap)));
+  const monthlySurplusNonIsaValues = result.monthly_savings_values.map((value, index) =>
+    Math.max(0, value - monthlySurplusIsaValues[index]),
+  );
   const metrics: [string, number[]][] = [
-    ['Monthly Income', result.income_values],
-    ['Monthly Expenses', result.expense_values],
-    ['Monthly Mortgage Repayments', result.mortgage_payment_values],
-    ['Monthly Savings', result.monthly_savings_values],
+    ['Active Income (Post-Tax)', result.income_values],
+    ['Active Income (Pre-Tax)', result.active_income_pre_tax_values],
+    ['Living Expenses', result.expense_values],
+    ['Mortgage', result.mortgage_payment_values],
+    ['Monthly SIPP Contribution', result.sipp_contribution_values],
+    ['Monthly Workplace Pension Contribution', result.workplace_pension_contribution_values],
+    ['Monthly Capital Gains (ISA)', result.isa_capital_gain_values],
+    ['Monthly Gains (Non-ISA)', result.non_isa_gain_values],
+    ['Monthly Surplus (ISA)', monthlySurplusIsaValues],
+    ['Monthly Surplus (Non-ISA)', monthlySurplusNonIsaValues],
   ];
   return metrics.map(([label, series]) => ({
     label,
@@ -249,6 +260,7 @@ export const buildForecastViewModel = (rawInputs: ForecastInputs): ForecastViewM
   ];
 
   const extendedExpenses = extendSeriesToYearEnd(chartResult.dates, chartResult.expense_values);
+  const extendedMortgagePayments = extendSeriesToYearEnd(chartResult.dates, chartResult.mortgage_payment_values);
   const withdrawalSeries = [
     {
       name: `${extractionRateLabel(chartResult.extraction_rate)} Annual Withdrawal`,
@@ -259,7 +271,10 @@ export const buildForecastViewModel = (rawInputs: ForecastInputs): ForecastViewM
         return isaValue * (chartResult.extraction_rate / 100) + calculateNonIsaNetWithdrawal(nonIsaValue, nonIsaCostBasis, chartResult.extraction_rate);
       }),
     },
-    { name: 'Annual Expenses (Inflation-Adjusted)', values: sample(extendedExpenses.values.map((v) => v * 12), indices) },
+    {
+      name: 'Annual Expenses (Incl. Mortgage)',
+      values: indices.map((index) => (extendedExpenses.values[index] + extendedMortgagePayments.values[index]) * 12),
+    },
   ];
 
   return {
@@ -272,7 +287,7 @@ export const buildForecastViewModel = (rawInputs: ForecastInputs): ForecastViewM
     yearlyLabels,
     assetSeries,
     withdrawalSeries,
-    financeRows: buildFinanceRows(fiResult),
+    financeRows: buildFinanceRows(fiResult, inputs.isaAnnualContribution),
     netWorthRows: buildNetWorthRows(fiResult),
     fiHealthRows: buildFiHealthRows(fiResult),
     raw: chartResult,

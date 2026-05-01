@@ -110,6 +110,7 @@ interface SimulateMonthArgs {
   sippContribution: number;
   sippRate: number;
   pensionTaxReliefRate: number;
+  currentMortgagePayment: number;
 }
 
 interface MonthResult {
@@ -123,6 +124,13 @@ interface MonthResult {
   savings: number;
   isa_annual_used: number;
   monthly_personal_pension: number;
+  monthly_workplace_pension: number;
+  monthly_sipp_net: number;
+  active_income_pre_tax: number;
+  isa_contribution: number;
+  non_isa_contribution: number;
+  isa_capital_gain: number;
+  non_isa_gain: number;
 }
 
 const simulateMonth = (args: SimulateMonthArgs): MonthResult => {
@@ -151,6 +159,7 @@ const simulateMonth = (args: SimulateMonthArgs): MonthResult => {
     sippContribution,
     sippRate,
     pensionTaxReliefRate,
+    currentMortgagePayment,
   } = args;
 
   if (month > 0 && date.getUTCMonth() + 1 === 1) {
@@ -175,15 +184,23 @@ const simulateMonth = (args: SimulateMonthArgs): MonthResult => {
   const currentMonthlyPersonalPension = currentMonthlyWorkplacePension + currentMonthlySippNet;
 
   // Net-pay model: take-home income already excludes workplace employee pension deductions.
-  const currentMonthlySavings = currentIncome - currentExpenses - currentMonthlySippNet + sippRelief.extraCashRelief;
+  const currentMonthlySavings = currentIncome - currentExpenses - currentMortgagePayment - currentMonthlySippNet + sippRelief.extraCashRelief;
+  let isaContribution = 0;
+  let nonIsaContribution = 0;
+  let isaCapitalGain = 0;
+  let nonIsaGain = 0;
   if (month > 0) {
-    currentIsa = currentIsa * (1 + isaRate / 12);
-    currentNonIsa = currentNonIsa * (1 + nonIsaRate / 12);
+    const isaBeforeGrowth = currentIsa;
+    const nonIsaBeforeGrowth = currentNonIsa;
+    isaCapitalGain = isaBeforeGrowth * (isaRate / 12);
+    nonIsaGain = nonIsaBeforeGrowth * (nonIsaRate / 12);
+    currentIsa = isaBeforeGrowth + isaCapitalGain;
+    currentNonIsa = nonIsaBeforeGrowth + nonIsaGain;
     currentPension = currentPension * (1 + pensionInterestRate / 12);
     if (currentMonthlySavings > 0) {
       const remainingIsaAllowance = annualIsaLimit - isaAnnualUsed;
-      const isaContribution = Math.min(currentMonthlySavings, remainingIsaAllowance);
-      const nonIsaContribution = Math.max(0, currentMonthlySavings - isaContribution);
+      isaContribution = Math.min(currentMonthlySavings, remainingIsaAllowance);
+      nonIsaContribution = Math.max(0, currentMonthlySavings - isaContribution);
       currentIsa += isaContribution;
       currentNonIsa += nonIsaContribution;
       isaAnnualUsed += isaContribution;
@@ -203,6 +220,13 @@ const simulateMonth = (args: SimulateMonthArgs): MonthResult => {
     savings: currentMonthlySavings,
     isa_annual_used: isaAnnualUsed,
     monthly_personal_pension: currentMonthlyPersonalPension,
+    monthly_workplace_pension: currentMonthlyWorkplacePension,
+    monthly_sipp_net: currentMonthlySippNet,
+    active_income_pre_tax: currentIncome + currentMonthlyWorkplacePension,
+    isa_contribution: isaContribution,
+    non_isa_contribution: nonIsaContribution,
+    isa_capital_gain: isaCapitalGain,
+    non_isa_gain: nonIsaGain,
   };
 };
 
@@ -293,8 +317,13 @@ export const calculateForecast = (input: {
   const mortgageBalanceValues: number[] = [];
   const homeEquityValues: number[] = [];
   const incomeValues: number[] = [];
+  const activeIncomePreTaxValues: number[] = [];
   const mortgagePaymentValues: number[] = [];
   const nonIsaCostBasisValues: number[] = [];
+  const workplacePensionContributionValues: number[] = [];
+  const sippContributionValues: number[] = [];
+  const isaCapitalGainValues: number[] = [];
+  const nonIsaGainValues: number[] = [];
 
   let currentIsa = isaAssets;
   let currentNonIsa = nonIsaAssets;
@@ -319,6 +348,7 @@ export const calculateForecast = (input: {
     if (month <= months) {
       dates.push(toIsoMonth(date));
     }
+    const currentMortgagePaymentForMonth = mortgageMonthsRemaining > 0 ? monthlyMortgagePayment : 0;
     const monthResult = simulateMonth({
       month,
       date,
@@ -344,6 +374,7 @@ export const calculateForecast = (input: {
       sippContribution,
       sippRate,
       pensionTaxReliefRate,
+      currentMortgagePayment: currentMortgagePaymentForMonth,
     });
     currentIsa = monthResult.isa;
     currentNonIsa = monthResult.non_isa;
@@ -366,18 +397,23 @@ export const calculateForecast = (input: {
     }
 
     currentHomeEquity = Math.max(0, homeValue - currentMortgageBalance);
-    const currentMortgagePayment = mortgageMonthsRemaining > 0 ? monthlyMortgagePayment : 0;
+    const currentMortgagePayment = currentMortgagePaymentForMonth;
     if (month <= months) {
       isaValues.push(currentIsa);
       nonIsaValues.push(currentNonIsa);
       pensionValues.push(currentPension);
       expenseValues.push(currentExpenses);
       incomeValues.push(currentIncome);
+      activeIncomePreTaxValues.push(monthResult.active_income_pre_tax);
       monthlySavingsValues.push(monthResult.savings);
       mortgageBalanceValues.push(currentMortgageBalance);
       homeEquityValues.push(currentHomeEquity);
       mortgagePaymentValues.push(currentMortgagePayment);
       nonIsaCostBasisValues.push(currentNonIsaCostBasis);
+      workplacePensionContributionValues.push(monthResult.monthly_workplace_pension);
+      sippContributionValues.push(monthResult.monthly_sipp_net);
+      isaCapitalGainValues.push(monthResult.isa_capital_gain);
+      nonIsaGainValues.push(monthResult.non_isa_gain);
       totalWealth.push(currentIsa + currentNonIsa + currentPension + currentHomeEquity);
     }
 
@@ -438,9 +474,14 @@ export const calculateForecast = (input: {
     final_annual_expenses: finalAnnualExpenses,
     expense_values: expenseValues,
     income_values: incomeValues,
+    active_income_pre_tax_values: activeIncomePreTaxValues,
     mortgage_balance_values: mortgageBalanceValues,
     mortgage_payment_values: mortgagePaymentValues,
     home_equity_values: homeEquityValues,
+    workplace_pension_contribution_values: workplacePensionContributionValues,
+    sipp_contribution_values: sippContributionValues,
+    isa_capital_gain_values: isaCapitalGainValues,
+    non_isa_gain_values: nonIsaGainValues,
     home_value: homeValue,
     final_mortgage_balance: currentMortgageBalance,
     final_home_equity: currentHomeEquity,

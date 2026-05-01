@@ -1,11 +1,14 @@
-import { type FocusEvent, useEffect, useMemo, useState } from 'react';
+import { Fragment, type FocusEvent, useEffect, useMemo, useState } from 'react';
 import {
   Area,
   AreaChart,
+  Bar,
+  BarChart,
   CartesianGrid,
   Legend,
   Line,
   LineChart,
+  ReferenceLine,
   ResponsiveContainer,
   Tooltip,
   XAxis,
@@ -28,7 +31,9 @@ const chartDescriptions = {
   assetBreakdown:
     'Stacked areas show how ISA, non-ISA, pension, and home equity contribute to your overall net worth path.',
   passiveIncome:
-    'This compares projected annual withdrawal capacity against annual inflation-adjusted expenses to highlight your FI crossover.',
+    'This compares projected annual withdrawal capacity against annual inflation-adjusted spending (including mortgage) to highlight your FI crossover.',
+  savings:
+    'This breaks down monthly cash flow into income, core outgoings, and the surplus allocated between ISA and non-ISA investing.',
 } as const;
 
 const incomeFields: { key: keyof ForecastInputs; label: string; step?: number }[] = [
@@ -103,6 +108,22 @@ const formatCompactCurrency = (value: number): string => {
   }).format(value);
   return `£${compact}`;
 };
+
+const parseCurrencyValue = (value: string): number => {
+  const parsed = Number(value.replace(/[^\d.-]/g, ''));
+  return Number.isFinite(parsed) ? parsed : 0;
+};
+
+const formatTableCurrency = (value: number): string => {
+  const rounded = Math.round(value);
+  const abs = Math.abs(rounded).toLocaleString('en-GB');
+  return `${rounded < 0 ? '-' : ''}£${abs}`;
+};
+
+const COST_ROW_LABELS = new Set([
+  'Living Expenses',
+  'Mortgage',
+]);
 const renderAssetTooltip = ({
   active,
   payload,
@@ -179,6 +200,12 @@ export const ForecasterApp = () => {
     }
   });
   const [isInputsOpen, setIsInputsOpen] = useState(false);
+  const [expandedSavingsGroups, setExpandedSavingsGroups] = useState<Record<string, boolean>>({
+    income: false,
+    pension: false,
+    surplus: false,
+    gains: false,
+  });
   const dataColors = useMemo(
     () => ({
       isa: themeDataColor('--data-color-1', '#5B8CFF'),
@@ -187,6 +214,15 @@ export const ForecasterApp = () => {
       homeEquity: themeDataColor('--data-color-4', '#C7B8FF'),
       withdrawal: themeDataColor('--data-color-1', '#5B8CFF'),
       expenses: themeDataColor('--data-color-2', '#8E75FF'),
+      livingExpenses: themeDataColor('--data-color-2', '#8E75FF'),
+      mortgage: themeDataColor('--data-color-3', '#6E5BFF'),
+      surplusIsa: themeDataColor('--data-color-1', '#5B8CFF'),
+      surplusNonIsa: themeDataColor('--data-color-2', '#8E75FF'),
+      monthlySurplus: themeDataColor('--data-color-1', '#5B8CFF'),
+      sippContribution: themeDataColor('--data-color-4', '#C7B8FF'),
+      workplacePensionContribution: themeDataColor('--data-color-3', '#6E5BFF'),
+      monthlyPensionContribution: themeDataColor('--data-color-4', '#C7B8FF'),
+      monthlyInvestmentGains: themeDataColor('--data-color-5', '#88A4FF'),
     }),
     [],
   );
@@ -267,6 +303,180 @@ export const ForecasterApp = () => {
   const latestCoverageRatio = latestIncomeSnapshot.expenses > 0 ? latestIncomeSnapshot.withdrawal / latestIncomeSnapshot.expenses : 0;
   const crossoverPoint = withdrawalChartData.find((point) => point.withdrawal >= point.expenses);
   const crossoverYear = crossoverPoint?.year ?? 'Not reached in forecast window';
+  const yearlyWithdrawalLabels = new Set(withdrawalChartData.map((point) => point.year));
+  const fiAchievedYear = vm.raw.fi_date ? vm.raw.fi_date.slice(0, 4) : null;
+  const hasMortgageSeries = vm.raw.mortgage_payment_values.some((payment) => payment > 0);
+  const mortgagePaidOffMonthIndex = hasMortgageSeries ? vm.raw.mortgage_payment_values.findIndex((payment) => payment <= 0) : -1;
+  const mortgagePaidOffYear = mortgagePaidOffMonthIndex >= 0 ? vm.raw.dates[mortgagePaidOffMonthIndex]?.slice(0, 4) ?? null : null;
+  const showFiReferenceLine = fiAchievedYear !== null && yearlyWithdrawalLabels.has(fiAchievedYear);
+  const showMortgageReferenceLine = mortgagePaidOffYear !== null && yearlyWithdrawalLabels.has(mortgagePaidOffYear);
+  const fiAchievedText = fiAchievedYear ?? 'Not achieved in forecast window';
+  const mortgagePaidOffText = hasMortgageSeries
+    ? mortgagePaidOffYear ?? 'Not paid off in forecast window'
+    : 'No mortgage balance in forecast';
+  const financeRowByLabel = Object.fromEntries(vm.financeRows.map((row) => [row.label, row.values])) as Record<string, string[]>;
+  const signedFinanceValue = (label: string, rawValue: number): number => (COST_ROW_LABELS.has(label) ? -Math.abs(rawValue) : Math.abs(rawValue));
+  const financeSeries = (label: string): number[] =>
+    metricColumns.map((_, index) => signedFinanceValue(label, parseCurrencyValue(financeRowByLabel[label]?.[index] ?? '£0')));
+  const financeValueAt = (label: string, index: number): number => financeSeries(label)[index] ?? 0;
+  const latestActiveIncomePostTax = financeValueAt('Active Income (Post-Tax)', metricColumns.length - 1);
+  const latestActiveIncomePreTax = financeValueAt('Active Income (Pre-Tax)', metricColumns.length - 1);
+  const savingsChartData = metricColumns.map((label, index) => ({
+    label,
+    livingExpenses: financeValueAt('Living Expenses', index),
+    mortgage: financeValueAt('Mortgage', index),
+    sippContribution: financeValueAt('Monthly SIPP Contribution', index),
+    workplacePensionContribution: financeValueAt('Monthly Workplace Pension Contribution', index),
+    surplusIsa: financeValueAt('Monthly Surplus (ISA)', index),
+    surplusNonIsa: financeValueAt('Monthly Surplus (Non-ISA)', index),
+    monthlyPensionContribution: financeValueAt('Monthly SIPP Contribution', index) + financeValueAt('Monthly Workplace Pension Contribution', index),
+    monthlySurplus: financeValueAt('Monthly Surplus (ISA)', index) + financeValueAt('Monthly Surplus (Non-ISA)', index),
+    monthlyInvestmentGains: financeValueAt('Monthly Capital Gains (ISA)', index) + financeValueAt('Monthly Gains (Non-ISA)', index),
+  }));
+  const latestSavingsSnapshot = savingsChartData[savingsChartData.length - 1] ?? {
+    label: 'FI',
+    livingExpenses: 0,
+    mortgage: 0,
+    sippContribution: 0,
+    workplacePensionContribution: 0,
+    surplusIsa: 0,
+    surplusNonIsa: 0,
+    monthlyPensionContribution: 0,
+    monthlySurplus: 0,
+    monthlyInvestmentGains: 0,
+  };
+  const savingsLegendItems = [
+    { label: 'Living Expenses', color: dataColors.livingExpenses },
+    { label: 'Mortgage', color: dataColors.mortgage },
+    { label: 'Monthly Pension Contribution', color: dataColors.monthlyPensionContribution },
+    { label: 'Monthly Surplus', color: dataColors.monthlySurplus },
+    { label: 'Monthly Investment Gains', color: dataColors.monthlyInvestmentGains },
+  ];
+  const renderSavingsLegend = () => {
+    return (
+      <div
+        style={{
+          display: 'flex',
+          flexWrap: 'wrap',
+          justifyContent: 'center',
+          gap: 12,
+          marginBottom: 8,
+          width: '100%',
+        }}
+      >
+        {savingsLegendItems.map((entry) => (
+          <span key={entry.label} style={{ display: 'inline-flex', alignItems: 'center', gap: 6, color: '#c0ccec' }}>
+            <span
+              aria-hidden="true"
+              style={{
+                width: 12,
+                height: 12,
+                borderRadius: 2,
+                backgroundColor: entry.color,
+                display: 'inline-block',
+              }}
+            />
+            <span>{entry.label}</span>
+          </span>
+        ))}
+      </div>
+    );
+  };
+  const groupRowValues = (labels: string[]): string[] =>
+    metricColumns.map((_, index) =>
+      formatTableCurrency(
+        labels.reduce((sum, label) => sum + financeValueAt(label, index), 0),
+      ),
+    );
+  const formatSeries = (label: string): string[] => financeSeries(label).map((value) => formatTableCurrency(value));
+  const savingsTableRows: Array<{
+    key: string;
+    label: string;
+    values: string[];
+    children?: Array<{ key: string; label: string; values: string[] }>;
+    highlight?: boolean;
+  }> = [
+    {
+      key: 'income',
+      label: 'Active Income',
+      values: formatSeries('Active Income (Post-Tax)'),
+      children: [
+        {
+          key: 'active-income-post-tax',
+          label: 'Active Income (Post-Tax)',
+          values: formatSeries('Active Income (Post-Tax)'),
+        },
+        {
+          key: 'active-income-pre-tax',
+          label: 'Active Income (Pre-Tax)',
+          values: formatSeries('Active Income (Pre-Tax)'),
+        },
+      ],
+    },
+    {
+      key: 'living-expenses',
+      label: 'Living Expenses',
+      values: formatSeries('Living Expenses'),
+    },
+    {
+      key: 'mortgage',
+      label: 'Mortgage',
+      values: formatSeries('Mortgage'),
+    },
+    {
+      key: 'pension',
+      label: 'Monthly Pension Contribution',
+      values: groupRowValues(['Monthly SIPP Contribution', 'Monthly Workplace Pension Contribution']),
+      children: [
+        {
+          key: 'sipp-contribution',
+          label: 'Monthly SIPP Contribution',
+          values: formatSeries('Monthly SIPP Contribution'),
+        },
+        {
+          key: 'workplace-pension-contribution',
+          label: 'Monthly Workplace Pension Contribution',
+          values: formatSeries('Monthly Workplace Pension Contribution'),
+        },
+      ],
+    },
+    {
+      key: 'surplus',
+      label: 'Monthly Surplus',
+      values: groupRowValues(['Monthly Surplus (ISA)', 'Monthly Surplus (Non-ISA)']),
+      children: [
+        {
+          key: 'monthly-surplus-isa',
+          label: 'Monthly Surplus (ISA)',
+          values: formatSeries('Monthly Surplus (ISA)'),
+        },
+        {
+          key: 'monthly-surplus-non-isa',
+          label: 'Monthly Surplus (Non-ISA)',
+          values: formatSeries('Monthly Surplus (Non-ISA)'),
+        },
+      ],
+      highlight: true,
+    },
+    {
+      key: 'gains',
+      label: 'Monthly Investment Gains',
+      values: groupRowValues(['Monthly Capital Gains (ISA)', 'Monthly Gains (Non-ISA)']),
+      children: [
+        {
+          key: 'monthly-capital-gains-isa',
+          label: 'Monthly Capital Gains (ISA)',
+          values: formatSeries('Monthly Capital Gains (ISA)'),
+        },
+        {
+          key: 'monthly-gains-non-isa',
+          label: 'Monthly Gains (Non-ISA)',
+          values: formatSeries('Monthly Gains (Non-ISA)'),
+        },
+      ],
+    },
+  ];
+  const latestMonthlySurplus = latestSavingsSnapshot.surplusIsa + latestSavingsSnapshot.surplusNonIsa;
   const formatCurrencyTick = (value: number) => formatCompactCurrency(value);
   const inputId = (key: keyof ForecastInputs) => `input-${key}`;
   const renderInputLabel = (key: keyof ForecastInputs, label: string) => (
@@ -538,7 +748,151 @@ export const ForecasterApp = () => {
           </section>
 
           <section className="narrative-chart">
-            <h3 className="narrative-chart-title">Asset Breakdown Over Time</h3>
+            <h3 className="section-heading">Passive Income</h3>
+            <div className="narrative-copy">
+              <p>{chartDescriptions.passiveIncome}</p>
+              <ul className="chart-takeaways">
+                <li>
+                  <strong>FI achieved year:</strong> {fiAchievedText}
+                </li>
+                <li>
+                  <strong>Mortgage paid off year:</strong> {mortgagePaidOffText}
+                </li>
+                <li>
+                  <strong>Coverage ratio in {latestIncomeSnapshot.year}:</strong> {latestCoverageRatio.toFixed(2)}x
+                </li>
+                <li>
+                  <strong>Withdrawal minus total spending in {latestIncomeSnapshot.year}:</strong> {formatCompactCurrency(latestCoverageGap)}
+                </li>
+                <li>
+                  <strong>Expected FI crossover year (yearly series):</strong> {crossoverYear}
+                </li>
+              </ul>
+            </div>
+            <article className="plot-card">
+              <h4 className="section-subheading">Potential Passive Income vs Projected Expenses</h4>
+              <div className="chart-wrap">
+                <ResponsiveContainer width="100%" height={360}>
+                  <LineChart data={withdrawalChartData} margin={{ top: 16, right: 8, left: 12, bottom: 8 }}>
+                    <CartesianGrid stroke="#32466d" strokeDasharray="3 3" />
+                    <XAxis dataKey="year" stroke="#c0ccec" />
+                    <YAxis stroke="#c0ccec" tickFormatter={formatCurrencyTick} />
+                    <Tooltip
+                      formatter={(value) => formatCompactCurrency(Number(value ?? 0))}
+                      contentStyle={{ backgroundColor: '#0d162a', border: '1px solid #32466d', borderRadius: 10 }}
+                      itemStyle={{ color: '#f0f4ff' }}
+                      labelStyle={{ color: '#c0ccec' }}
+                    />
+                    {showMortgageReferenceLine ? (
+                      <ReferenceLine
+                        x={mortgagePaidOffYear ?? undefined}
+                        stroke="#94a3b8"
+                        strokeDasharray="6 4"
+                        label={{
+                          value: 'Mortgage Paid Off',
+                          position: 'insideTopRight',
+                          fill: '#e2e8f0',
+                          fontSize: 11,
+                          fontWeight: 600,
+                          stroke: '#0d162a',
+                          strokeWidth: 3,
+                          paintOrder: 'stroke',
+                        }}
+                      />
+                    ) : null}
+                    {showFiReferenceLine ? (
+                      <ReferenceLine
+                        x={fiAchievedYear ?? undefined}
+                        stroke="#94a3b8"
+                        strokeDasharray="6 4"
+                        label={{
+                          value: 'FI Achieved',
+                          position: 'insideTopLeft',
+                          fill: '#e2e8f0',
+                          fontSize: 11,
+                          fontWeight: 600,
+                          stroke: '#0d162a',
+                          strokeWidth: 3,
+                          paintOrder: 'stroke',
+                        }}
+                      />
+                    ) : null}
+                    <Legend />
+                    <Line
+                      type="monotone"
+                      dataKey="withdrawal"
+                      stroke={dataColors.withdrawal}
+                      strokeWidth={2}
+                      dot={false}
+                      activeDot={false}
+                      name={vm.withdrawalSeries[0]?.name ?? 'Annual Withdrawal'}
+                    />
+                    <Line
+                      type="monotone"
+                      dataKey="expenses"
+                      stroke={dataColors.expenses}
+                      strokeWidth={2}
+                      dot={false}
+                      activeDot={false}
+                      name="Annual Expenses (Incl. Mortgage)"
+                    />
+                  </LineChart>
+                </ResponsiveContainer>
+              </div>
+            </article>
+
+            <table className="section-table">
+              <thead>
+                <tr>
+                  <th>Metric</th>
+                  {metricColumns.map((c) => (
+                    <th key={c}>{c}</th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {vm.fiHealthRows.map((row) => (
+                  <tr key={row.label}>
+                    <td>
+                      {row.label === 'Liquid Runway (Years)' ? (
+                        <span className="label-with-info">
+                          <span>{row.label}</span>
+                          <span className="tooltip-wrap">
+                            <button type="button" className="info-icon" aria-label="About Liquid Runway">
+                              i
+                            </button>
+                            <span className="tooltip-content tooltip-content--right" role="tooltip">
+                              Static runway based on current liquid assets and current annual spend; assumes no investment growth.
+                            </span>
+                          </span>
+                        </span>
+                      ) : row.label === 'FI Coverage Ratio' ? (
+                        <span className="label-with-info">
+                          <span>{row.label}</span>
+                          <span className="tooltip-wrap">
+                            <button type="button" className="info-icon" aria-label="About FI Coverage Ratio">
+                              i
+                            </button>
+                            <span className="tooltip-content tooltip-content--right" role="tooltip">
+                              Ratio of annual FI withdrawals to annual spend (including mortgage): values above 1.00x indicate coverage.
+                            </span>
+                          </span>
+                        </span>
+                      ) : (
+                        row.label
+                      )}
+                    </td>
+                    {row.values.map((value, valueIndex) => (
+                      <td key={`${row.label}-${valueIndex}`}>{value}</td>
+                    ))}
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </section>
+
+          <section className="narrative-chart">
+            <h3 className="section-heading">Assets</h3>
             <div className="narrative-copy">
               <p>{chartDescriptions.assetBreakdown}</p>
               <ul className="chart-takeaways">
@@ -555,6 +909,7 @@ export const ForecasterApp = () => {
               </ul>
             </div>
             <article className="plot-card">
+              <h4 className="section-subheading">Asset Breakdown Over Time</h4>
               <div className="chart-wrap">
                 <ResponsiveContainer width="100%" height={360}>
                   <AreaChart data={assetChartData} margin={{ top: 16, right: 8, left: 12, bottom: 8 }}>
@@ -616,27 +971,37 @@ export const ForecasterApp = () => {
           </section>
 
           <section className="narrative-chart">
-            <h3 className="narrative-chart-title">Potential Passive Income vs Projected Expenses</h3>
+            <h3 className="section-heading">Savings</h3>
             <div className="narrative-copy">
-              <p>{chartDescriptions.passiveIncome}</p>
+              <p>{chartDescriptions.savings}</p>
               <ul className="chart-takeaways">
                 <li>
-                  <strong>Expected FI crossover year:</strong> {crossoverYear}
+                  <strong>Active income at {latestSavingsSnapshot.label} (post-tax / pre-tax):</strong>{' '}
+                  {formatCompactCurrency(latestActiveIncomePostTax)} / {formatCompactCurrency(latestActiveIncomePreTax)}
                 </li>
                 <li>
-                  <strong>Coverage ratio in {latestIncomeSnapshot.year}:</strong> {latestCoverageRatio.toFixed(2)}x
+                  <strong>Total committed monthly outflow at {latestSavingsSnapshot.label}:</strong>{' '}
+                  {formatCompactCurrency(
+                    latestSavingsSnapshot.livingExpenses + latestSavingsSnapshot.mortgage + latestSavingsSnapshot.sippContribution,
+                  )}
                 </li>
                 <li>
-                  <strong>Withdrawal minus expenses in {latestIncomeSnapshot.year}:</strong> {formatCompactCurrency(latestCoverageGap)}
+                  <strong>Total monthly surplus at {latestSavingsSnapshot.label}:</strong> {formatCompactCurrency(latestMonthlySurplus)}
+                </li>
+                <li>
+                  <strong>Total monthly pension contribution at {latestSavingsSnapshot.label}:</strong>{' '}
+                  {formatCompactCurrency(latestSavingsSnapshot.monthlyPensionContribution)}
                 </li>
               </ul>
             </div>
             <article className="plot-card">
+              <h4 className="section-subheading">Monthly Cash Flow Allocation</h4>
               <div className="chart-wrap">
                 <ResponsiveContainer width="100%" height={360}>
-                  <LineChart data={withdrawalChartData} margin={{ top: 16, right: 8, left: 12, bottom: 8 }}>
+                  <BarChart data={savingsChartData} margin={{ top: 16, right: 8, left: 12, bottom: 8 }}>
                     <CartesianGrid stroke="#32466d" strokeDasharray="3 3" />
-                    <XAxis dataKey="year" stroke="#c0ccec" />
+                    <ReferenceLine y={0} stroke="#f0f4ff" strokeWidth={2} />
+                    <XAxis dataKey="label" stroke="#c0ccec" axisLine={false} tickLine={false} />
                     <YAxis stroke="#c0ccec" tickFormatter={formatCurrencyTick} />
                     <Tooltip
                       formatter={(value) => formatCompactCurrency(Number(value ?? 0))}
@@ -644,27 +1009,23 @@ export const ForecasterApp = () => {
                       itemStyle={{ color: '#f0f4ff' }}
                       labelStyle={{ color: '#c0ccec' }}
                     />
-                    <Legend />
-                    <Line
-                      type="monotone"
-                      dataKey="withdrawal"
-                      stroke={dataColors.withdrawal}
-                      strokeWidth={2}
-                      dot={false}
-                      activeDot={false}
-                      name={vm.withdrawalSeries[0]?.name ?? 'Annual Withdrawal'}
+                    <Legend content={renderSavingsLegend} />
+                    <Bar dataKey="livingExpenses" stackId="costs" fill={dataColors.livingExpenses} name="Living Expenses" />
+                    <Bar dataKey="mortgage" stackId="costs" fill={dataColors.mortgage} name="Mortgage" />
+                    <Bar
+                      dataKey="monthlyPensionContribution"
+                      stackId="gains"
+                      fill={dataColors.monthlyPensionContribution}
+                      name="Monthly Pension Contribution"
                     />
-                    <Line
-                      type="monotone"
-                      dataKey="expenses"
-                      stroke={dataColors.expenses}
-                      strokeWidth={2}
-                      strokeDasharray="6 4"
-                      dot={false}
-                      activeDot={false}
-                      name="Annual Expenses (Inflation-Adjusted)"
+                    <Bar dataKey="monthlySurplus" stackId="gains" fill={dataColors.monthlySurplus} name="Monthly Surplus" />
+                    <Bar
+                      dataKey="monthlyInvestmentGains"
+                      stackId="gains"
+                      fill={dataColors.monthlyInvestmentGains}
+                      name="Monthly Investment Gains"
                     />
-                  </LineChart>
+                  </BarChart>
                 </ResponsiveContainer>
               </div>
             </article>
@@ -679,64 +1040,47 @@ export const ForecasterApp = () => {
                 </tr>
               </thead>
               <tbody>
-                {vm.fiHealthRows.map((row) => (
-                  <tr key={row.label}>
-                    <td>
-                      {row.label === 'Liquid Runway (Years)' ? (
-                        <span className="label-with-info">
-                          <span>{row.label}</span>
-                          <span className="tooltip-wrap">
-                            <button type="button" className="info-icon" aria-label="About Liquid Runway">
-                              i
-                            </button>
-                            <span className="tooltip-content tooltip-content--right" role="tooltip">
-                              Static runway based on current liquid assets and current annual spend; assumes no investment growth.
+                {savingsTableRows.map((row) => (
+                  <Fragment key={row.key}>
+                    <tr key={row.key} className={row.highlight ? 'highlight-row' : ''}>
+                      <td>
+                        {row.children ? (
+                          <button
+                            type="button"
+                            className="table-expand-button"
+                            onClick={() =>
+                              setExpandedSavingsGroups((prev) => ({
+                                ...prev,
+                                [row.key]: !prev[row.key],
+                              }))
+                            }
+                            aria-expanded={expandedSavingsGroups[row.key] ? 'true' : 'false'}
+                            aria-label={expandedSavingsGroups[row.key] ? `Collapse ${row.label}` : `Expand ${row.label}`}
+                          >
+                            <span className="table-expand-icon" aria-hidden="true">
+                              <span className="table-expand-symbol">{expandedSavingsGroups[row.key] ? '-' : '+'}</span>
                             </span>
-                          </span>
-                        </span>
-                      ) : row.label === 'FI Coverage Ratio' ? (
-                        <span className="label-with-info">
-                          <span>{row.label}</span>
-                          <span className="tooltip-wrap">
-                            <button type="button" className="info-icon" aria-label="About FI Coverage Ratio">
-                              i
-                            </button>
-                            <span className="tooltip-content tooltip-content--right" role="tooltip">
-                              Ratio of annual FI withdrawals to annual spend (including mortgage): values above 1.00x indicate coverage.
-                            </span>
-                          </span>
-                        </span>
-                      ) : (
-                        row.label
-                      )}
-                    </td>
-                    {row.values.map((value, valueIndex) => (
-                      <td key={`${row.label}-${valueIndex}`}>{value}</td>
-                    ))}
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </section>
-
-          <section className="table-section">
-            <table>
-              <thead>
-                <tr>
-                  <th>Metric</th>
-                  {metricColumns.map((c) => (
-                    <th key={c}>{c}</th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody>
-                {vm.financeRows.map((row) => (
-                  <tr key={row.label} className={row.label === 'Monthly Savings' ? 'highlight-row' : ''}>
-                    <td>{row.label}</td>
-                    {row.values.map((value, valueIndex) => (
-                      <td key={`${row.label}-${valueIndex}`}>{value}</td>
-                    ))}
-                  </tr>
+                            <span>{row.label}</span>
+                          </button>
+                        ) : (
+                          row.label
+                        )}
+                      </td>
+                      {row.values.map((value, valueIndex) => (
+                        <td key={`${row.key}-${valueIndex}`}>{value}</td>
+                      ))}
+                    </tr>
+                    {row.children && expandedSavingsGroups[row.key]
+                      ? row.children.map((childRow) => (
+                          <tr key={childRow.key} className="table-detail-row">
+                            <td>{childRow.label}</td>
+                            {childRow.values.map((value, valueIndex) => (
+                              <td key={`${childRow.key}-${valueIndex}`}>{value}</td>
+                            ))}
+                          </tr>
+                        ))
+                      : null}
+                  </Fragment>
                 ))}
               </tbody>
             </table>

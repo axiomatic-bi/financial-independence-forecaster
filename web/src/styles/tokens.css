@@ -29,6 +29,7 @@
   --data-color-2: var(--accent-strong);
   --data-color-3: #6e5bff;
   --data-color-4: #c7b8ff;
+  --data-color-5: color-mix(in srgb, var(--data-color-1) 58%, var(--data-color-4) 42%);
   --panel-width: 360px;
   --panel-min-width: 320px;
   --content-max-width: 1440px;

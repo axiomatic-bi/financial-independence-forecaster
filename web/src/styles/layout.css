@@ -57,6 +57,16 @@
   padding: var(--space-4);
 }
 
+.panel h2,
+.section-heading {
+  margin: 0;
+  color: var(--text-primary);
+  font-size: 1.5rem;
+  font-weight: 600;
+  line-height: 1.2;
+  letter-spacing: -0.01em;
+}
+
 .field { margin-bottom: var(--space-2); display: flex; flex-direction: column; gap: var(--space-1); }
 .field label { color: var(--text-secondary); font-size: 0.85rem; }
 

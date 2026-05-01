@@ -57,9 +57,14 @@ export interface ForecastResult {
   final_annual_expenses: number;
   expense_values: number[];
   income_values: number[];
+  active_income_pre_tax_values: number[];
   mortgage_balance_values: number[];
   mortgage_payment_values: number[];
   home_equity_values: number[];
+  workplace_pension_contribution_values: number[];
+  sipp_contribution_values: number[];
+  isa_capital_gain_values: number[];
+  non_isa_gain_values: number[];
   home_value: number;
   final_mortgage_balance: number;
   final_home_equity: number;
