@@ -1,7 +1,7 @@
 import { CartesianGrid, Legend, Line, LineChart, ReferenceLine, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
 
 import { chartDescriptions, metricColumns } from './constants';
-import { formatCompactCurrency } from './format';
+import { formatCompactCurrency, isZeroDisplay } from './format';
 import type { DataColors, ForecasterPresentation } from './types';
 
 interface PassiveIncomeSectionProps {
@@ -151,7 +151,9 @@ export const PassiveIncomeSection = ({ data, dataColors, isaAnnualContribution }
                 )}
               </td>
               {row.values.map((value, valueIndex) => (
-                <td key={`${row.label}-${valueIndex}`}>{value}</td>
+                <td key={`${row.label}-${valueIndex}`}>
+                  <span className={isZeroDisplay(value) ? 'table-zero-value' : undefined}>{value}</span>
+                </td>
               ))}
             </tr>
           ))}

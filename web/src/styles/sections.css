@@ -338,18 +338,22 @@ tbody td:last-child {
   font-weight: 700;
 }
 
+.table-zero-value {
+  color: color-mix(in srgb, var(--text-secondary) 78%, transparent);
+}
+
 .highlight-row td {
-  font-weight: 700;
-  background: color-mix(in srgb, var(--surface-subtle) 52%, transparent);
-  backdrop-filter: blur(10px) saturate(118%);
-  -webkit-backdrop-filter: blur(10px) saturate(118%);
+  font-weight: 600;
+  background: color-mix(in srgb, var(--surface-subtle) 32%, transparent);
+  backdrop-filter: blur(6px) saturate(108%);
+  -webkit-backdrop-filter: blur(6px) saturate(108%);
 }
 
 tr.total td {
-  font-weight: 700;
-  background: color-mix(in srgb, var(--surface-subtle) 54%, transparent);
-  backdrop-filter: blur(10px) saturate(118%);
-  -webkit-backdrop-filter: blur(10px) saturate(118%);
+  font-weight: 600;
+  background: color-mix(in srgb, var(--surface-subtle) 30%, transparent);
+  backdrop-filter: blur(6px) saturate(108%);
+  -webkit-backdrop-filter: blur(6px) saturate(108%);
 }
 
 .perf { color: var(--text-secondary); font-size: 0.8rem; }

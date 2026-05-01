@@ -1,7 +1,8 @@
+import { Fragment } from 'react';
 import { Area, AreaChart, CartesianGrid, Legend, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
 
 import { chartDescriptions, metricColumns } from './constants';
-import { formatCompactCurrency } from './format';
+import { formatCompactCurrency, formatTableCurrency, isZeroDisplay, parseCurrencyValue } from './format';
 import type { DataColors, ForecasterPresentation } from './types';
 
 const renderAssetTooltip = ({
@@ -40,6 +41,8 @@ const renderAssetTooltip = ({
 interface AssetsSectionProps {
   data: ForecasterPresentation;
   dataColors: DataColors;
+  expandedAssetGroups: Record<string, boolean>;
+  onToggleAssetGroup: (groupKey: string) => void;
 }
 
 const assetTableLabel = (label: string): string => {
@@ -49,7 +52,7 @@ const assetTableLabel = (label: string): string => {
   return label;
 };
 
-export const AssetsSection = ({ data, dataColors }: AssetsSectionProps) => (
+export const AssetsSection = ({ data, dataColors, expandedAssetGroups, onToggleAssetGroup }: AssetsSectionProps) => (
   <section className="narrative-chart">
     <h3 className="section-heading">Assets</h3>
     <div className="narrative-copy">
@@ -85,6 +88,26 @@ export const AssetsSection = ({ data, dataColors }: AssetsSectionProps) => (
       </div>
     </article>
 
+    <AssetsTable data={data} expandedAssetGroups={expandedAssetGroups} onToggleAssetGroup={onToggleAssetGroup} />
+  </section>
+);
+
+const AssetsTable = ({
+  data,
+  expandedAssetGroups,
+  onToggleAssetGroup,
+}: Pick<AssetsSectionProps, 'data' | 'expandedAssetGroups' | 'onToggleAssetGroup'>) => {
+  const investmentChildren = data.vm.netWorthRows.filter(
+    (row) => row.label === 'ISA Investments' || row.label === 'Non-ISA Investments (GIA)',
+  );
+  const investmentParentValues = metricColumns.map((_, index) =>
+    formatTableCurrency(investmentChildren.reduce((sum, row) => sum + parseCurrencyValue(row.values[index] ?? '£0'), 0)),
+  );
+  const primaryRows = data.vm.netWorthRows.filter(
+    (row) => row.label !== 'ISA Investments' && row.label !== 'Non-ISA Investments (GIA)',
+  );
+
+  return (
     <table className="section-table">
       <thead>
         <tr>
@@ -95,15 +118,52 @@ export const AssetsSection = ({ data, dataColors }: AssetsSectionProps) => (
         </tr>
       </thead>
       <tbody>
-        {data.vm.netWorthRows.map((row) => (
-          <tr key={row.label} className={row.isTotal ? 'total' : ''}>
+        <Fragment key="investments-group">
+          <tr>
+            <td>
+              <button
+                type="button"
+                className="table-expand-button"
+                onClick={() => onToggleAssetGroup('investments')}
+                aria-expanded={expandedAssetGroups.investments ? 'true' : 'false'}
+                aria-label={expandedAssetGroups.investments ? 'Collapse Investments' : 'Expand Investments'}
+              >
+                <span className="table-expand-icon" aria-hidden="true">
+                  <span className="table-expand-symbol">{expandedAssetGroups.investments ? '-' : '+'}</span>
+                </span>
+                <span>Investments</span>
+              </button>
+            </td>
+            {investmentParentValues.map((value, valueIndex) => (
+              <td key={`investments-${valueIndex}`}>
+                <span className={isZeroDisplay(value) ? 'table-zero-value' : undefined}>{value}</span>
+              </td>
+            ))}
+          </tr>
+          {expandedAssetGroups.investments
+            ? investmentChildren.map((row) => (
+                <tr key={row.label} className="table-detail-row">
+                  <td>{assetTableLabel(row.label)}</td>
+                  {row.values.map((value, valueIndex) => (
+                    <td key={`${row.label}-${valueIndex}`}>
+                      <span className={isZeroDisplay(value) ? 'table-zero-value' : undefined}>{value}</span>
+                    </td>
+                  ))}
+                </tr>
+              ))
+            : null}
+        </Fragment>
+        {primaryRows.map((row) => (
+          <tr key={row.label} className={row.label === "Real Net Worth (Today's £)" ? 'highlight-row' : ''}>
             <td>{assetTableLabel(row.label)}</td>
             {row.values.map((value, valueIndex) => (
-              <td key={`${row.label}-${valueIndex}`}>{value}</td>
+              <td key={`${row.label}-${valueIndex}`}>
+                <span className={isZeroDisplay(value) ? 'table-zero-value' : undefined}>{value}</span>
+              </td>
             ))}
           </tr>
         ))}
       </tbody>
     </table>
-  </section>
-);
+  );
+};

@@ -2,7 +2,7 @@ import { Fragment } from 'react';
 import { Bar, BarChart, CartesianGrid, Legend, ReferenceLine, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
 
 import { chartDescriptions, metricColumns } from './constants';
-import { formatCompactCurrency } from './format';
+import { formatCompactCurrency, isZeroDisplay } from './format';
 import type { DataColors, ForecasterPresentation } from './types';
 
 interface SavingsSectionProps {
@@ -139,7 +139,9 @@ export const SavingsSection = ({ data, dataColors, expandedSavingsGroups, onTogg
                     )}
                   </td>
                   {row.values.map((value, valueIndex) => (
-                    <td key={`${row.key}-${valueIndex}`}>{value}</td>
+                    <td key={`${row.key}-${valueIndex}`}>
+                      <span className={isZeroDisplay(value) ? 'table-zero-value' : undefined}>{value}</span>
+                    </td>
                   ))}
                 </tr>
                 {row.children && expandedSavingsGroups[row.key]
@@ -147,7 +149,9 @@ export const SavingsSection = ({ data, dataColors, expandedSavingsGroups, onTogg
                       <tr key={childRow.key} className="table-detail-row">
                         <td>{childRow.label}</td>
                         {childRow.values.map((value, valueIndex) => (
-                          <td key={`${childRow.key}-${valueIndex}`}>{value}</td>
+                          <td key={`${childRow.key}-${valueIndex}`}>
+                            <span className={isZeroDisplay(value) ? 'table-zero-value' : undefined}>{value}</span>
+                          </td>
                         ))}
                       </tr>
                     ))

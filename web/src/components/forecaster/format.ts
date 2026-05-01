@@ -22,3 +22,15 @@ export const formatTableCurrency = (value: number): string => {
   const abs = Math.abs(rounded).toLocaleString('en-GB');
   return `${rounded < 0 ? '-' : ''}£${abs}`;
 };
+
+export const isZeroDisplay = (value: string): boolean => {
+  const compact = value.trim();
+  if (!compact) {
+    return false;
+  }
+  const numeric = Number(compact.replace(/[^0-9.-]/g, ''));
+  if (!Number.isFinite(numeric)) {
+    return false;
+  }
+  return numeric === 0;
+};

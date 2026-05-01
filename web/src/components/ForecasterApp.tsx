@@ -11,6 +11,12 @@ import type { DataColors } from './forecaster/types';
 import type { ForecastInputs } from '../types/forecast';
 
 const INPUTS_STORAGE_KEY = 'financial-forecaster:inputs';
+const nonNegativeOrDefault = (value: number, fallback: number): number => {
+  if (!Number.isFinite(value)) {
+    return fallback;
+  }
+  return Math.max(0, value);
+};
 
 const themeDataColor = (token: string, fallback: string): string => {
   if (typeof window === 'undefined') {
@@ -53,7 +59,11 @@ export const ForecasterApp = () => {
         return defaultInputs;
       }
       const parsed = JSON.parse(raw) as Partial<ForecastInputs>;
-      return { ...defaultInputs, ...parsed };
+      const merged = { ...defaultInputs, ...parsed };
+      return {
+        ...merged,
+        pensionAssets: nonNegativeOrDefault(Number(merged.pensionAssets), defaultInputs.pensionAssets),
+      };
     } catch {
       return defaultInputs;
     }
@@ -64,6 +74,9 @@ export const ForecasterApp = () => {
     pension: false,
     surplus: false,
     gains: false,
+  });
+  const [expandedAssetGroups, setExpandedAssetGroups] = useState<Record<string, boolean>>({
+    investments: false,
   });
 
   const dataColors = useDataColors();
@@ -132,7 +145,17 @@ export const ForecasterApp = () => {
             dataColors={dataColors}
             isaAnnualContribution={inputs.isaAnnualContribution}
           />
-          <AssetsSection data={presentation} dataColors={dataColors} />
+          <AssetsSection
+            data={presentation}
+            dataColors={dataColors}
+            expandedAssetGroups={expandedAssetGroups}
+            onToggleAssetGroup={(groupKey) =>
+              setExpandedAssetGroups((prev) => ({
+                ...prev,
+                [groupKey]: !prev[groupKey],
+              }))
+            }
+          />
           <SavingsSection
             data={presentation}
             dataColors={dataColors}
