@@ -66,17 +66,21 @@
 
 .kpis .tooltip-corner {
   top: var(--space-3);
+  left: var(--space-3);
   right: var(--space-3);
+  display: flex;
+  justify-content: flex-end;
   transform: translateY(-1px);
 }
 
-.kpis .tooltip-content {
+.kpis .tooltip-corner .tooltip-content {
+  left: auto;
+  right: 0;
+  top: calc(100% + 8px);
+  transform: none;
+  width: 100%;
+  max-width: 100%;
   z-index: 40;
-}
-
-.kpis .card:first-child .tooltip-content {
-  left: 0;
-  right: auto;
 }
 
 .kpis .card:hover,
@@ -89,7 +93,7 @@
   height: 16px;
   border-radius: 50%;
   border: 0;
-  background: color-mix(in srgb, var(--text-secondary) 28%, transparent);
+  background: color-mix(in srgb, var(--text-secondary) 16%, transparent);
   color: var(--text-primary);
   font-size: 11px;
   line-height: 1;
@@ -146,6 +150,37 @@
 .tooltip-wrap:focus-within .tooltip-content {
   opacity: 1;
   visibility: visible;
+}
+
+.panel .field .label-with-info {
+  position: relative;
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  width: 100%;
+}
+
+.panel .field .label-with-info > span:first-child {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.panel .field .label-with-info .tooltip-wrap {
+  position: static;
+  margin-left: auto;
+  flex: 0 0 auto;
+}
+
+.panel .field .label-with-info .tooltip-content,
+.panel .field .label-with-info .tooltip-content--center,
+.panel .field .label-with-info .tooltip-content--right {
+  left: auto;
+  right: 0;
+  top: calc(100% + 8px);
+  transform: none;
+  width: 100%;
+  max-width: 100%;
+  z-index: 221;
 }
 
 .narrative-chart {
