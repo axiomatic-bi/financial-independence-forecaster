@@ -23,11 +23,13 @@
 
 .card {
   position: relative;
-  background: var(--surface-on-bleed);
-  border: none;
+  background: color-mix(in srgb, var(--surface) 38%, transparent);
+  border: 1px solid color-mix(in srgb, var(--text-primary) 18%, transparent);
   border-radius: 12px;
   padding: var(--space-3);
-  box-shadow: 0 12px 24px rgba(2, 8, 20, 0.24);
+  backdrop-filter: blur(14px) saturate(125%);
+  -webkit-backdrop-filter: blur(14px) saturate(125%);
+  box-shadow: none;
 }
 
 .card h3 {
@@ -124,7 +126,8 @@
 .narrative-chart {
   display: grid;
   grid-template-columns: minmax(260px, 360px) 1fr;
-  gap: var(--space-3);
+  row-gap: var(--space-3);
+  column-gap: calc(var(--space-3) + 10px);
   align-items: stretch;
 }
 
@@ -162,7 +165,7 @@
 }
 
 .narrative-copy {
-  padding: var(--space-1) 0;
+  padding: 0 0 var(--space-1);
 }
 
 .narrative-copy p {
@@ -186,14 +189,22 @@
   color: var(--text-primary);
 }
 
-.plot-card { background: transparent; border: 1px solid var(--border); border-radius: 12px; padding: var(--space-3); min-height: 420px; }
+.plot-card {
+  background: transparent;
+  border: none;
+  border-radius: 12px;
+  padding: 0 var(--space-3) var(--space-3);
+  min-height: 420px;
+  box-shadow: none;
+}
 .section-subheading {
   margin: 0 0 var(--space-2);
+  padding-left: 12px;
   font-size: 0.88rem;
-  text-transform: uppercase;
+  text-transform: none;
   color: var(--text-primary);
   font-weight: 700;
-  letter-spacing: 0.04em;
+  letter-spacing: 0.01em;
 }
 .chart-wrap { width: 100%; height: 360px; }
 
@@ -247,11 +258,22 @@
   margin-top: var(--space-3);
 }
 
-table { width: 100%; border-collapse: separate; border-spacing: 0; border: 1px solid var(--border); border-radius: 12px; overflow: hidden; table-layout: auto; }
+table {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+  border: none;
+  border-radius: 12px;
+  overflow: hidden;
+  table-layout: auto;
+  background: transparent;
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+}
 
 th, td {
-  border-right: 1px solid var(--border);
-  border-bottom: 1px solid var(--border);
+  border-right: none;
+  border-bottom: 1px solid color-mix(in srgb, var(--text-primary) 9%, transparent);
   padding: var(--space-1);
   text-align: right;
   white-space: normal;
@@ -303,20 +325,31 @@ thead th {
   color: var(--text-primary);
   font-size: 0.88rem;
   font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
-  background: var(--surface-on-bleed);
+  text-transform: none;
+  letter-spacing: 0.01em;
+  background: transparent;
+  border-bottom: 1px solid color-mix(in srgb, var(--text-primary) 30%, transparent);
 }
 
-thead th:last-child,
-tbody td:last-child { border-right: none; }
-
 tbody tr:last-child td { border-bottom: none; }
-tr.total td { font-weight: 700; background: var(--surface-subtle); }
+
+thead th:last-child,
+tbody td:last-child {
+  font-weight: 700;
+}
 
 .highlight-row td {
   font-weight: 700;
-  background: var(--surface-subtle);
+  background: color-mix(in srgb, var(--surface-subtle) 52%, transparent);
+  backdrop-filter: blur(10px) saturate(118%);
+  -webkit-backdrop-filter: blur(10px) saturate(118%);
+}
+
+tr.total td {
+  font-weight: 700;
+  background: color-mix(in srgb, var(--surface-subtle) 54%, transparent);
+  backdrop-filter: blur(10px) saturate(118%);
+  -webkit-backdrop-filter: blur(10px) saturate(118%);
 }
 
 .perf { color: var(--text-secondary); font-size: 0.8rem; }

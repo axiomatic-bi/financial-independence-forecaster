@@ -17,8 +17,8 @@ export const PassiveIncomeSection = ({ data, dataColors, isaAnnualContribution }
       <div className="narrative-copy">
         <p>{chartDescriptions.passiveIncome}</p>
         <p>
-          Assumption: monthly surplus is directed to tax-efficient ISA contributions first, up to your selected annual ISA allowance (
-          £{Math.round(isaAnnualContribution).toLocaleString('en-GB')}); any remaining surplus is invested outside ISA wrappers.
+          Assumption: monthly surplus is directed to tax-efficient ISA contributions first, up to your selected annual ISA allowance
+          (£{Math.round(isaAnnualContribution).toLocaleString('en-GB')}); any remaining surplus is invested outside ISA wrappers.
         </p>
         <ul className="chart-takeaways">
           <li>
@@ -40,7 +40,7 @@ export const PassiveIncomeSection = ({ data, dataColors, isaAnnualContribution }
         <div className="chart-wrap">
           <ResponsiveContainer width="100%" height={360}>
             <LineChart data={data.withdrawalChartData} margin={{ top: 16, right: 90, left: 12, bottom: 8 }}>
-              <CartesianGrid stroke="#32466d" strokeDasharray="3 3" />
+              <CartesianGrid stroke="#32466d" strokeDasharray="3 3" vertical={false} />
               <XAxis dataKey="year" stroke="#c0ccec" />
               <YAxis stroke="#c0ccec" tickFormatter={formatCompactCurrency} />
               <Tooltip

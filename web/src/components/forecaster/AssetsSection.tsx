@@ -42,6 +42,13 @@ interface AssetsSectionProps {
   dataColors: DataColors;
 }
 
+const assetTableLabel = (label: string): string => {
+  if (label === 'ISA') {
+    return 'ISA Assets';
+  }
+  return label;
+};
+
 export const AssetsSection = ({ data, dataColors }: AssetsSectionProps) => (
   <section className="narrative-chart">
     <h3 className="section-heading">Assets</h3>
@@ -64,7 +71,7 @@ export const AssetsSection = ({ data, dataColors }: AssetsSectionProps) => (
       <div className="chart-wrap">
         <ResponsiveContainer width="100%" height={360}>
           <AreaChart data={data.assetChartData} margin={{ top: 16, right: 8, left: 12, bottom: 8 }}>
-            <CartesianGrid stroke="#32466d" strokeDasharray="3 3" />
+            <CartesianGrid stroke="#32466d" strokeDasharray="3 3" vertical={false} />
             <XAxis dataKey="year" stroke="#c0ccec" />
             <YAxis stroke="#c0ccec" tickFormatter={formatCompactCurrency} />
             <Tooltip content={renderAssetTooltip} />
@@ -90,7 +97,7 @@ export const AssetsSection = ({ data, dataColors }: AssetsSectionProps) => (
       <tbody>
         {data.vm.netWorthRows.map((row) => (
           <tr key={row.label} className={row.isTotal ? 'total' : ''}>
-            <td>{row.label}</td>
+            <td>{assetTableLabel(row.label)}</td>
             {row.values.map((value, valueIndex) => (
               <td key={`${row.label}-${valueIndex}`}>{value}</td>
             ))}

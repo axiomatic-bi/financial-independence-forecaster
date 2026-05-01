@@ -81,7 +81,7 @@ export const SavingsSection = ({ data, dataColors, expandedSavingsGroups, onTogg
           <div className="chart-wrap">
             <ResponsiveContainer width="100%" height={360}>
               <BarChart data={data.savingsChartData} margin={{ top: 16, right: 8, left: 12, bottom: 8 }}>
-                <CartesianGrid stroke="#32466d" strokeDasharray="3 3" />
+                <CartesianGrid stroke="#32466d" strokeDasharray="3 3" vertical={false} />
                 <ReferenceLine y={0} stroke="#f0f4ff" strokeWidth={2} />
                 <XAxis dataKey="label" stroke="#c0ccec" axisLine={false} tickLine={false} />
                 <YAxis stroke="#c0ccec" tickFormatter={formatCompactCurrency} />
