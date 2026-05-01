@@ -92,4 +92,5 @@ export interface InputsPanelProps {
   isOpen: boolean;
   onInputsChange: Dispatch<SetStateAction<ForecastInputs>>;
   onCloseMobilePanel: () => void;
+  onResetInputs: () => void;
 }

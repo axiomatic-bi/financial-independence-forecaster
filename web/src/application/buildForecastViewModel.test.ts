@@ -18,6 +18,7 @@ interface ScenarioFixture {
 const scenarios = (fixtureData as { scenarios: ScenarioFixture[] }).scenarios;
 
 const mapFixtureInputs = (inputs: Record<string, number | string>) => ({
+  householdMode: Number(inputs.isa_annual_contribution) >= 30000 ? ('couple' as const) : ('individual' as const),
   income: Number(inputs.income),
   expenses: Number(inputs.expenses),
   pensionableMonthlyPay: Number(inputs.pensionable_monthly_pay ?? inputs.income),
@@ -119,5 +120,64 @@ describe('buildForecastViewModel parity', () => {
     expect(vm.raw.mortgage_interest_rate).toBe(3.83);
     expect(vm.raw.inflation_rate).toBe(2);
     expect(vm.raw.wage_increase_rate).toBe(3);
+    expect(vm.raw.household_mode).toBe('individual');
+    expect(vm.raw.cgt_annual_exempt_amount).toBe(3000);
+  });
+
+  it('applies couple-mode ISA and CGT assumptions without rescaling cashflow inputs', () => {
+    const vm = buildForecastViewModel({
+      ...defaultInputs,
+      householdMode: 'couple',
+      income: 3200,
+      expenses: 1800,
+      pensionableMonthlyPay: 3000,
+    });
+    expect(vm.raw.household_mode).toBe('couple');
+    expect(vm.raw.cgt_annual_exempt_amount).toBe(6000);
+    expect(vm.raw.income).toBe(3200);
+    expect(vm.raw.expenses).toBe(1800);
+  });
+
+  it('uses actual modeled ISA/non-ISA contributions in surplus split rows', () => {
+    const vm = buildForecastViewModel({
+      ...defaultInputs,
+      householdMode: 'individual',
+      income: 50000,
+      expenses: 0,
+      isaAssets: 0,
+      nonIsaAssets: 0,
+      isaRate: 0,
+      nonIsaRate: 0,
+      forecastYears: 1,
+      pensionContribution: 0,
+      employerPensionContributionRate: 0,
+      sippContribution: 0,
+      pensionableMonthlyPay: 0,
+    });
+    const monthlySurplusIsaRow = vm.financeRows.find((row) => row.label === 'Monthly surplus (ISA)');
+    const monthlySurplusNonIsaRow = vm.financeRows.find((row) => row.label === 'Monthly surplus (non-ISA)');
+    const parseCurrency = (value: string): number => Number(value.replace(/[^0-9.-]/g, ''));
+    const monthlyIsaCap = defaultInputs.isaAnnualContribution / 12;
+    const isaAtOneYear = parseCurrency(monthlySurplusIsaRow?.values[1] ?? '£0');
+    const nonIsaAtOneYear = parseCurrency(monthlySurplusNonIsaRow?.values[1] ?? '£0');
+    // Regression guard: row should reflect simulated annual-cap behavior, not a synthetic monthly ISA cap split.
+    expect(isaAtOneYear).not.toBe(Math.round(monthlyIsaCap));
+    expect(nonIsaAtOneYear).toBeGreaterThan(0);
+  });
+
+  it('keeps explicitly entered zero pensionable pay in calculations', () => {
+    const vm = buildForecastViewModel({
+      ...defaultInputs,
+      income: 3000,
+      expenses: 1000,
+      pensionableMonthlyPay: 0,
+      pensionType: 'percentage',
+      pensionContribution: 10,
+      employerPensionContributionRate: 5,
+      sippContribution: 0,
+      forecastYears: 1,
+    });
+    expect(vm.raw.pensionable_monthly_pay).toBe(0);
+    expect(vm.raw.workplace_pension_contribution_values[1]).toBeCloseTo(0, 5);
   });
 });

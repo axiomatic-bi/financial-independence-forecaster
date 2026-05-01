@@ -1,7 +1,10 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import type { SetStateAction } from 'react';
 
 import { buildForecastViewModel, defaultInputs } from '../application/buildForecastViewModel';
 import { buildForecasterPresentation } from '../application/buildForecasterPresentation';
+import { getIsaAnnualContributionForHousehold } from '../domain/forecast';
+import { UK_BASELINE_BY_HOUSEHOLD_MODE } from '../domain/ukBaseline';
 import { AssetsSection } from './forecaster/AssetsSection';
 import { AssumptionsSection } from './forecaster/AssumptionsSection';
 import { formatCompactCurrency } from './forecaster/format';
@@ -30,21 +33,9 @@ const onboardingSteps: OnboardingStep[] = [
     openInputsPanel: false,
   },
   {
-    key: 'engine-room-income',
-    targetSelector: '[data-tour-target="inputs-income-section"]',
-    text: 'Start by entering your Net Monthly Income (Post-Tax/Pension) and core outgoings. This defines your Monthly Surplus for investment.',
-    openInputsPanel: true,
-  },
-  {
-    key: 'wealth-stack-assets',
-    targetSelector: '[data-tour-target="inputs-current-assets-section"]',
-    text: 'Add your current Individual Savings Account (ISA) and Pension Pot values. This populates your starting wealth for the modelling engine.',
-    openInputsPanel: true,
-  },
-  {
-    key: 'advanced-inputs',
-    targetSelector: '[data-tour-target="inputs-advanced-section"]',
-    text: 'Use Advanced Inputs to refine assumptions like property, pension setup, and forecast controls for a more realistic plan.',
+    key: 'main-inputs',
+    targetSelector: '[data-tour-target="inputs-main-section"]',
+    text: 'Set your main inputs here: household composition, income, expenses, pensionable income, current assets, and core growth assumptions.',
     openInputsPanel: true,
   },
   {
@@ -59,6 +50,42 @@ const nonNegativeOrDefault = (value: number, fallback: number): number => {
     return fallback;
   }
   return Math.max(0, value);
+};
+
+export const normalizeHouseholdMode = (mode: ForecastInputs['householdMode'] | undefined): ForecastInputs['householdMode'] =>
+  mode === 'couple' ? 'couple' : 'individual';
+
+export const applyHouseholdDerivedValues = (inputs: ForecastInputs): ForecastInputs => {
+  const householdMode = normalizeHouseholdMode(inputs.householdMode);
+  return {
+    ...inputs,
+    householdMode,
+    isaAnnualContribution: getIsaAnnualContributionForHousehold(householdMode),
+  };
+};
+
+export const modeAwareDefaults = (householdMode: ForecastInputs['householdMode']): ForecastInputs => {
+  const baseline = UK_BASELINE_BY_HOUSEHOLD_MODE[householdMode];
+  return applyHouseholdDerivedValues({
+    ...defaultInputs,
+    householdMode,
+    income: baseline.monthlyIncomeAfterTax,
+    expenses: baseline.monthlyExpensesExMortgage,
+    pensionableMonthlyPay: baseline.monthlyIncomeGross,
+  });
+};
+
+export const deriveInitialInputsFromStorage = (storedInputsRaw: string | null): ForecastInputs => {
+  if (!storedInputsRaw) {
+    return defaultInputs;
+  }
+  const parsed = JSON.parse(storedInputsRaw) as Partial<ForecastInputs>;
+  const merged = { ...defaultInputs, ...parsed };
+  return applyHouseholdDerivedValues({
+    ...merged,
+    householdMode: normalizeHouseholdMode(merged.householdMode),
+    pensionAssets: nonNegativeOrDefault(Number(merged.pensionAssets), defaultInputs.pensionAssets),
+  });
 };
 
 const themeDataColor = (token: string, fallback: string): string => {
@@ -162,16 +189,7 @@ export const ForecasterApp = () => {
       return defaultInputs;
     }
     try {
-      const raw = window.localStorage.getItem(INPUTS_STORAGE_KEY);
-      if (!raw) {
-        return defaultInputs;
-      }
-      const parsed = JSON.parse(raw) as Partial<ForecastInputs>;
-      const merged = { ...defaultInputs, ...parsed };
-      return {
-        ...merged,
-        pensionAssets: nonNegativeOrDefault(Number(merged.pensionAssets), defaultInputs.pensionAssets),
-      };
+      return deriveInitialInputsFromStorage(window.localStorage.getItem(INPUTS_STORAGE_KEY));
     } catch {
       return defaultInputs;
     }
@@ -189,9 +207,22 @@ export const ForecasterApp = () => {
   const [isOnboardingActive, setIsOnboardingActive] = useState(false);
   const [onboardingStepIndex, setOnboardingStepIndex] = useState(0);
   const [spotlightRect, setSpotlightRect] = useState<null | { top: number; left: number; width: number; height: number }>(null);
+  const [onboardingTooltipHeight, setOnboardingTooltipHeight] = useState(220);
+  const onboardingTooltipRef = useRef<HTMLElement | null>(null);
 
   const dataColors = useDataColors();
   const currentOnboardingStep = onboardingSteps[onboardingStepIndex] ?? null;
+
+  const handleInputsChange = useCallback((nextState: SetStateAction<ForecastInputs>) => {
+    setInputs((prev) => {
+      const next = typeof nextState === 'function' ? nextState(prev) : nextState;
+      return applyHouseholdDerivedValues(next);
+    });
+  }, []);
+
+  const resetInputsToDefaults = useCallback(() => {
+    setInputs((prev) => modeAwareDefaults(prev.householdMode));
+  }, []);
 
   const completeOnboarding = useCallback(() => {
     setIsOnboardingActive(false);
@@ -287,6 +318,32 @@ export const ForecasterApp = () => {
     };
   }, [currentOnboardingStep, isOnboardingActive, refreshSpotlight]);
 
+  useEffect(() => {
+    if (!isOnboardingActive || !currentOnboardingStep) {
+      return;
+    }
+    const tooltipEl = onboardingTooltipRef.current;
+    if (!tooltipEl) {
+      return;
+    }
+
+    const measure = () => {
+      const nextHeight = Math.ceil(tooltipEl.getBoundingClientRect().height);
+      if (nextHeight > 0) {
+        setOnboardingTooltipHeight((prev) => (Math.abs(prev - nextHeight) > 1 ? nextHeight : prev));
+      }
+    };
+
+    measure();
+    const resizeObserver = new ResizeObserver(measure);
+    resizeObserver.observe(tooltipEl);
+    window.addEventListener('resize', measure);
+    return () => {
+      resizeObserver.disconnect();
+      window.removeEventListener('resize', measure);
+    };
+  }, [currentOnboardingStep, isOnboardingActive, onboardingStepIndex]);
+
   if (vmResult.error || !vmResult.vm) {
     return (
       <div className="app-error">
@@ -303,14 +360,48 @@ export const ForecasterApp = () => {
   const isFinalOnboardingStep = onboardingStepIndex === onboardingSteps.length - 1;
   const viewportWidth = typeof window === 'undefined' ? 1280 : window.innerWidth;
   const viewportHeight = typeof window === 'undefined' ? 720 : window.innerHeight;
+  const isMobileViewport = viewportWidth <= 960;
+  const tooltipVerticalGap = 14;
+  const tooltipHorizontalMargin = 16;
+  const tooltipSafeTop = isMobileViewport ? 12 : 16;
+  const tooltipSafeBottom = isMobileViewport ? 112 : 16;
   const tooltipWidth = Math.min(360, Math.max(260, viewportWidth - 32));
   const tooltipLeft = spotlightRect
-    ? Math.min(Math.max(16, spotlightRect.left + spotlightRect.width / 2 - tooltipWidth / 2), Math.max(16, viewportWidth - tooltipWidth - 16))
-    : 16;
-  const shouldPlaceTooltipAbove = spotlightRect
-    ? spotlightRect.top + spotlightRect.height + 240 > viewportHeight && spotlightRect.top > 220
-    : false;
-  const tooltipTop = spotlightRect ? (shouldPlaceTooltipAbove ? Math.max(16, spotlightRect.top - 170) : spotlightRect.top + spotlightRect.height + 14) : 16;
+    ? Math.min(
+        Math.max(tooltipHorizontalMargin, spotlightRect.left + spotlightRect.width / 2 - tooltipWidth / 2),
+        Math.max(tooltipHorizontalMargin, viewportWidth - tooltipWidth - tooltipHorizontalMargin),
+      )
+    : tooltipHorizontalMargin;
+
+  const tooltipPlacement: 'below' | 'above' | 'mobile-bottom' = (() => {
+    if (!spotlightRect) {
+      return isMobileViewport ? 'mobile-bottom' : 'below';
+    }
+    const availableBelow = viewportHeight - (spotlightRect.top + spotlightRect.height + tooltipVerticalGap) - tooltipSafeBottom;
+    const availableAbove = spotlightRect.top - tooltipVerticalGap - tooltipSafeTop;
+    const fitsBelow = availableBelow >= onboardingTooltipHeight;
+    const fitsAbove = availableAbove >= onboardingTooltipHeight;
+    if (fitsBelow) {
+      return 'below';
+    }
+    if (fitsAbove) {
+      return 'above';
+    }
+    if (isMobileViewport) {
+      return 'mobile-bottom';
+    }
+    return availableBelow >= availableAbove ? 'below' : 'above';
+  })();
+
+  const tooltipTop =
+    !spotlightRect || tooltipPlacement === 'mobile-bottom'
+      ? undefined
+      : tooltipPlacement === 'above'
+        ? Math.max(tooltipSafeTop, spotlightRect.top - tooltipVerticalGap - onboardingTooltipHeight)
+        : Math.min(
+            spotlightRect.top + spotlightRect.height + tooltipVerticalGap,
+            Math.max(tooltipSafeTop, viewportHeight - onboardingTooltipHeight - tooltipSafeBottom),
+          );
 
   return (
     <div className="app">
@@ -334,8 +425,9 @@ export const ForecasterApp = () => {
           inputs={inputs}
           elapsedMs={vmResult.elapsedMs}
           isOpen={isInputsOpen}
-          onInputsChange={setInputs}
+          onInputsChange={handleInputsChange}
           onCloseMobilePanel={() => setIsInputsOpen(false)}
+          onResetInputs={resetInputsToDefaults}
         />
         <div className="main-body">
           <section className="content">
@@ -429,11 +521,21 @@ export const ForecasterApp = () => {
             }}
           />
           <section
+            ref={onboardingTooltipRef}
             className="onboarding-tooltip"
+            data-placement={tooltipPlacement}
             style={{
-              width: `${tooltipWidth}px`,
-              left: `${tooltipLeft}px`,
-              top: `${tooltipTop}px`,
+              ...(tooltipPlacement === 'mobile-bottom'
+                ? {
+                    left: `${tooltipHorizontalMargin}px`,
+                    right: `${tooltipHorizontalMargin}px`,
+                    bottom: 'calc(env(safe-area-inset-bottom, 0px) + 12px)',
+                  }
+                : {
+                    width: `${tooltipWidth}px`,
+                    left: `${tooltipLeft}px`,
+                    top: `${tooltipTop ?? tooltipSafeTop}px`,
+                  }),
             }}
           >
             <p className="onboarding-tooltip-step">

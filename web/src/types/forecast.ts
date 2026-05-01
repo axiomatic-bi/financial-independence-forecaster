@@ -1,6 +1,8 @@
 export type PensionType = 'percentage' | 'fixed';
+export type HouseholdMode = 'individual' | 'couple';
 
 export interface ForecastInputs {
+  householdMode: HouseholdMode;
   income: number;
   expenses: number;
   pensionableMonthlyPay: number;
@@ -76,6 +78,8 @@ export interface ForecastResult {
   fi_month_index: number | null;
   fi_evaluation_end_month: number;
   extraction_rate: number;
+  household_mode: HouseholdMode;
+  cgt_annual_exempt_amount: number;
 }
 
 export interface TableRow {

@@ -51,7 +51,7 @@ export const PassiveIncomeSection = ({ data, dataColors, isaAnnualContribution, 
         <h4 className="section-subheading">Potential passive income vs projected expenses</h4>
         <div className="chart-wrap">
           <ResponsiveContainer width="100%" height={360}>
-            <LineChart data={data.withdrawalChartData} margin={{ top: 16, right: 90, left: 12, bottom: 8 }}>
+            <LineChart data={data.withdrawalChartData} margin={{ top: 16, right: 8, left: 12, bottom: 8 }}>
               <CartesianGrid stroke="#32466d" strokeDasharray="3 3" vertical={false} />
               <XAxis dataKey="year" stroke="#c0ccec" />
               <YAxis stroke="#c0ccec" tickFormatter={formatCompactCurrency} />

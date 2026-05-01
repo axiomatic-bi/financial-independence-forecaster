@@ -65,7 +65,7 @@ const NumberInputField = ({
   </div>
 );
 
-export const InputsPanel = ({ inputs, elapsedMs, isOpen, onInputsChange, onCloseMobilePanel }: InputsPanelProps) => {
+export const InputsPanel = ({ inputs, elapsedMs, isOpen, onInputsChange, onCloseMobilePanel, onResetInputs }: InputsPanelProps) => {
   const handleNumberFocus = (event: FocusEvent<HTMLInputElement>) => {
     if (Number(event.target.value) === 0) {
       event.target.select();
@@ -74,20 +74,57 @@ export const InputsPanel = ({ inputs, elapsedMs, isOpen, onInputsChange, onClose
 
   return (
     <aside id="inputs-panel" className={`panel${isOpen ? ' is-open' : ''}`}>
-      <h2>Inputs</h2>
-      <section className="tour-input-section" data-tour-target="inputs-income-section">
-        <h3 className="inputs-subtitle">Income</h3>
-        {incomeFields.map(({ key, label, step }) => (
-          <NumberInputField
-            key={key}
-            inputKey={key}
-            label={label}
-            step={step}
-            value={inputs[key] as number}
-            onFocus={handleNumberFocus}
-            onInputsChange={onInputsChange}
-          />
-        ))}
+      <section className="tour-input-section" data-tour-target="inputs-main-section">
+        <h2>Inputs</h2>
+        <div className="field field--top-control">
+          {renderInputLabel('householdMode', 'Household composition')}
+          <div className="mode-toggle" role="radiogroup" aria-label="Household composition">
+            <label className={`mode-toggle-option${inputs.householdMode === 'individual' ? ' is-selected' : ''}`}>
+              <input
+                type="radio"
+                name="input-householdMode"
+                value="individual"
+                checked={inputs.householdMode === 'individual'}
+                onChange={(event) =>
+                  onInputsChange((prev) => ({
+                    ...prev,
+                    householdMode: event.target.value as ForecastInputs['householdMode'],
+                  }))
+                }
+              />
+              <span>Individual</span>
+            </label>
+            <label className={`mode-toggle-option${inputs.householdMode === 'couple' ? ' is-selected' : ''}`}>
+              <input
+                type="radio"
+                name="input-householdMode"
+                value="couple"
+                checked={inputs.householdMode === 'couple'}
+                onChange={(event) =>
+                  onInputsChange((prev) => ({
+                    ...prev,
+                    householdMode: event.target.value as ForecastInputs['householdMode'],
+                  }))
+                }
+              />
+              <span>Couple</span>
+            </label>
+          </div>
+        </div>
+        <section className="tour-input-section" data-tour-target="inputs-income-section">
+          <h3 className="inputs-subtitle">Income</h3>
+          {incomeFields.map(({ key, label, step }) => (
+            <NumberInputField
+              key={key}
+              inputKey={key}
+              label={label}
+              step={step}
+              value={inputs[key] as number}
+              onFocus={handleNumberFocus}
+              onInputsChange={onInputsChange}
+            />
+          ))}
+        </section>
       </section>
 
       <section className="tour-input-section" data-tour-target="inputs-current-assets-section">
@@ -227,6 +264,9 @@ export const InputsPanel = ({ inputs, elapsedMs, isOpen, onInputsChange, onClose
           ))}
         </details>
       </section>
+      <button type="button" className="button button-secondary" onClick={onResetInputs}>
+        Reset to defaults
+      </button>
       <p className="perf">Recompute latency: {elapsedMs.toFixed(1)}ms</p>
       <div className="mobile-panel-close-wrap">
         <button type="button" className="button button-primary mobile-panel-close-button" onClick={onCloseMobilePanel}>

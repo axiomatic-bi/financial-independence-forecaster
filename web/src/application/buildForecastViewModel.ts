@@ -1,10 +1,9 @@
-import { calculateForecast } from '../domain/forecast';
-import { UK_BASELINE_DEFAULTS } from '../domain/ukBaseline';
+import { calculateForecast, getIsaAnnualContributionForHousehold } from '../domain/forecast';
+import { UK_BASELINE_BY_HOUSEHOLD_MODE } from '../domain/ukBaseline';
 import type { ForecastInputs, ForecastResult, ForecastViewModel, TableRow } from '../types/forecast';
 
 const TIMEPOINTS_YEARS = [0, 1, 5, 10, 20];
 const FI_EVALUATION_MONTHS = 40 * 12;
-const UK_CGT_ANNUAL_EXEMPT_AMOUNT = 3000;
 const UK_CGT_BASIC_RATE = 0.18;
 
 const finiteOrZero = (value: number): number => (Number.isFinite(value) ? value : 0);
@@ -27,6 +26,9 @@ const formatKpiMonthYear = (dateValue: string | null): string => {
   }
   return `${MONTH_ABBREVIATIONS[monthIndex]} ${yearPart}`;
 };
+
+const normalizeHouseholdMode = (value: ForecastInputs['householdMode']): ForecastInputs['householdMode'] =>
+  value === 'couple' ? 'couple' : 'individual';
 
 const safeValue = (values: number[], index: number): number => {
   if (!values.length) return 0;
@@ -62,25 +64,39 @@ const yearEndIndices = (dates: string[]): number[] => {
 };
 
 const sample = (values: number[], indices: number[]): number[] => indices.map((i) => values[i]);
-const calculateNonIsaNetWithdrawal = (nonIsaValue: number, nonIsaCostBasis: number, extractionRatePercent: number): number => {
+const calculateNonIsaNetWithdrawal = (
+  nonIsaValue: number,
+  nonIsaCostBasis: number,
+  extractionRatePercent: number,
+  cgtAnnualExemptAmount: number,
+): number => {
   if (nonIsaValue <= 0 || extractionRatePercent <= 0) return 0;
   const grossWithdrawal = nonIsaValue * (extractionRatePercent / 100);
   const unrealizedGain = Math.max(0, nonIsaValue - Math.max(0, nonIsaCostBasis));
   const gainRatio = nonIsaValue > 0 ? unrealizedGain / nonIsaValue : 0;
   const gainsRealized = grossWithdrawal * gainRatio;
-  const taxableGains = Math.max(0, gainsRealized - UK_CGT_ANNUAL_EXEMPT_AMOUNT);
+  const taxableGains = Math.max(0, gainsRealized - cgtAnnualExemptAmount);
   const cgtDue = taxableGains * UK_CGT_BASIC_RATE;
   return Math.max(0, grossWithdrawal - cgtDue);
 };
 
-const buildFinanceRows = (result: ForecastResult, isaAnnualContribution: number): TableRow[] => {
+const deriveMonthlyContributions = (balances: number[], gains: number[]): number[] =>
+  balances.map((balance, index) => {
+    if (index === 0) {
+      return 0;
+    }
+    const priorBalance = balances[index - 1] ?? 0;
+    const gain = gains[index] ?? 0;
+    // Use realized balance deltas so displayed surplus split matches the simulation exactly.
+    const contribution = balance - priorBalance - gain;
+    return Math.max(0, contribution);
+  });
+
+const buildFinanceRows = (result: ForecastResult): TableRow[] => {
   const maxMonth = result.income_values.length - 1;
   const fiMonth = result.fi_month_index ?? maxMonth;
-  const monthlyIsaCap = Math.max(0, isaAnnualContribution / 12);
-  const monthlySurplusIsaValues = result.monthly_savings_values.map((value) => Math.max(0, Math.min(value, monthlyIsaCap)));
-  const monthlySurplusNonIsaValues = result.monthly_savings_values.map((value, index) =>
-    Math.max(0, value - monthlySurplusIsaValues[index]),
-  );
+  const monthlySurplusIsaValues = deriveMonthlyContributions(result.isa_values, result.isa_capital_gain_values);
+  const monthlySurplusNonIsaValues = deriveMonthlyContributions(result.non_isa_values, result.non_isa_gain_values);
   const metrics: [string, number[]][] = [
     ['Active income (post-tax)', result.income_values],
     ['Active income (pre-tax)', result.active_income_pre_tax_values],
@@ -120,7 +136,9 @@ const buildFiHealthRows = (result: ForecastResult): TableRow[] => {
     const isaValue = safeValue(result.isa_values, monthIndex);
     const nonIsaValue = safeValue(result.non_isa_values, monthIndex);
     const nonIsaCostBasis = safeValue(result.non_isa_cost_basis_values, monthIndex);
-    const annualWithdrawal = isaValue * (result.extraction_rate / 100) + calculateNonIsaNetWithdrawal(nonIsaValue, nonIsaCostBasis, result.extraction_rate);
+    const annualWithdrawal =
+      isaValue * (result.extraction_rate / 100) +
+      calculateNonIsaNetWithdrawal(nonIsaValue, nonIsaCostBasis, result.extraction_rate, result.cgt_annual_exempt_amount);
     const annualSpend =
       (safeValue(result.expense_values, monthIndex) + safeValue(result.mortgage_payment_values, monthIndex)) * 12;
     if (annualSpend <= 0) {
@@ -177,14 +195,15 @@ const buildNetWorthRows = (result: ForecastResult): TableRow[] => {
 
 export const normalizeInputs = (inputs: ForecastInputs): ForecastInputs => ({
   ...inputs,
-  pensionableMonthlyPay: inputs.pensionableMonthlyPay || inputs.income,
+  householdMode: normalizeHouseholdMode(inputs.householdMode),
+  pensionableMonthlyPay: inputs.pensionableMonthlyPay ?? inputs.income,
   forecastYears: inputs.forecastYears || 40,
   mortgageInterestRate: inputs.mortgageInterestRate || 3.83,
   homeAppreciationRate: inputs.homeAppreciationRate || 3.0,
   pensionInterestRate: inputs.pensionInterestRate || 5.0,
   inflationRate: inputs.inflationRate || 2.0,
   wageIncreaseRate: inputs.wageIncreaseRate || 3.0,
-  isaAnnualContribution: inputs.isaAnnualContribution || 40000,
+  isaAnnualContribution: getIsaAnnualContributionForHousehold(normalizeHouseholdMode(inputs.householdMode)),
   extractionRate: inputs.extractionRate || 3.9,
 });
 
@@ -192,6 +211,7 @@ export const buildForecastViewModel = (rawInputs: ForecastInputs): ForecastViewM
   const inputs = normalizeInputs(rawInputs);
   const chartMonths = inputs.forecastYears * 12;
   const chartResult = calculateForecast({
+    householdMode: inputs.householdMode,
     income: inputs.income,
     expenses: inputs.expenses,
     isaAssets: inputs.isaAssets,
@@ -219,6 +239,7 @@ export const buildForecastViewModel = (rawInputs: ForecastInputs): ForecastViewM
     extractionRate: inputs.extractionRate,
   });
   const fiResult = calculateForecast({
+    householdMode: inputs.householdMode,
     income: inputs.income,
     expenses: inputs.expenses,
     isaAssets: inputs.isaAssets,
@@ -253,7 +274,9 @@ export const buildForecastViewModel = (rawInputs: ForecastInputs): ForecastViewM
   const fiNonIsaCostBasis = safeValue(fiResult.non_isa_cost_basis_values, fiIndex);
   const extractionRate = fiResult.extraction_rate / 100;
   const fiWithdrawalAnnual =
-    fiIsa * extractionRate + calculateNonIsaNetWithdrawal(fiNonIsa, fiNonIsaCostBasis, fiResult.extraction_rate);
+    fiIsa *
+      extractionRate +
+    calculateNonIsaNetWithdrawal(fiNonIsa, fiNonIsaCostBasis, fiResult.extraction_rate, fiResult.cgt_annual_exempt_amount);
   const fiSavingsRate = fiIncome > 0 ? (fiSavings / fiIncome) * 100 : 0;
   const yearsText = fiResult.years_until_expenses_covered === null ? 'Never' : `${fiResult.years_until_expenses_covered.toFixed(1)}`;
 
@@ -281,7 +304,10 @@ export const buildForecastViewModel = (rawInputs: ForecastInputs): ForecastViewM
         const isaValue = extendedIsa.values[index] ?? 0;
         const nonIsaValue = extendedNonIsa.values[index] ?? 0;
         const nonIsaCostBasis = safeValue(chartResult.non_isa_cost_basis_values, index);
-        return isaValue * (chartResult.extraction_rate / 100) + calculateNonIsaNetWithdrawal(nonIsaValue, nonIsaCostBasis, chartResult.extraction_rate);
+        return (
+          isaValue * (chartResult.extraction_rate / 100) +
+          calculateNonIsaNetWithdrawal(nonIsaValue, nonIsaCostBasis, chartResult.extraction_rate, chartResult.cgt_annual_exempt_amount)
+        );
       }),
     },
     {
@@ -300,17 +326,20 @@ export const buildForecastViewModel = (rawInputs: ForecastInputs): ForecastViewM
     yearlyLabels,
     assetSeries,
     withdrawalSeries,
-    financeRows: buildFinanceRows(fiResult, inputs.isaAnnualContribution),
+    financeRows: buildFinanceRows(fiResult),
     netWorthRows: buildNetWorthRows(fiResult),
     fiHealthRows: buildFiHealthRows(fiResult),
     raw: chartResult,
   };
 };
 
+const individualDefaults = UK_BASELINE_BY_HOUSEHOLD_MODE.individual;
+
 export const defaultInputs: ForecastInputs = {
-  income: UK_BASELINE_DEFAULTS.monthlyIncomeAfterTax,
-  expenses: UK_BASELINE_DEFAULTS.monthlyExpensesExMortgage,
-  pensionableMonthlyPay: UK_BASELINE_DEFAULTS.monthlyIncomeAfterTax,
+  householdMode: 'individual',
+  income: individualDefaults.monthlyIncomeAfterTax,
+  expenses: individualDefaults.monthlyExpensesExMortgage,
+  pensionableMonthlyPay: individualDefaults.monthlyIncomeGross,
   isaAssets: 0,
   isaRate: 7,
   nonIsaAssets: 0,
@@ -321,7 +350,7 @@ export const defaultInputs: ForecastInputs = {
   mortgageTerm: 0,
   mortgageInterestRate: 3.83,
   homeAppreciationRate: 3,
-  isaAnnualContribution: 20000,
+  isaAnnualContribution: getIsaAnnualContributionForHousehold('individual'),
   pensionType: 'percentage',
   pensionAssets: 0,
   pensionContribution: 5,

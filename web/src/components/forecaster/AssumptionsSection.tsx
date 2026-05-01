@@ -1,3 +1,4 @@
+import React from 'react';
 import { formatCompactCurrency } from './format';
 import type { ForecasterPresentation } from './types';
 import type { ForecastInputs } from '../../types/forecast';
@@ -7,7 +8,6 @@ interface AssumptionsSectionProps {
   inputs: ForecastInputs;
 }
 
-const UK_CGT_ANNUAL_EXEMPT_AMOUNT = 3000;
 const UK_CGT_BASIC_RATE = 0.18;
 
 const formatRate = (value: number): string => `${value.toFixed(1)}%`;
@@ -22,7 +22,14 @@ const pensionContributionLabel = (inputs: ForecastInputs): string => {
 };
 
 export const AssumptionsSection = ({ data, inputs }: AssumptionsSectionProps) => {
+  const isCoupleMode = inputs.householdMode === 'couple';
+  const cgtAnnualExemptAmount = isCoupleMode ? 6000 : 3000;
   const assumptionRows: Array<{ assumption: string; value: string; usage: string }> = [
+    {
+      assumption: 'Household mode',
+      value: isCoupleMode ? 'Couple' : 'Individual',
+      usage: 'Controls household-level tax and allowance assumptions in projection math.',
+    },
     {
       assumption: 'Forecast horizon',
       value: `${inputs.forecastYears} years`,
@@ -71,7 +78,9 @@ export const AssumptionsSection = ({ data, inputs }: AssumptionsSectionProps) =>
     {
       assumption: 'ISA annual contribution cap',
       value: `${formatMoney(inputs.isaAnnualContribution)}/year`,
-      usage: 'Monthly surplus is allocated to ISA first up to this cap, then to non-ISA.',
+      usage: isCoupleMode
+        ? 'Assumes tax-efficient behavior: combined surplus fills both ISA allowances first, then non-ISA.'
+        : 'Monthly surplus is allocated to ISA first up to this cap, then to non-ISA.',
     },
     {
       assumption: 'Surplus allocation order',
@@ -115,7 +124,7 @@ export const AssumptionsSection = ({ data, inputs }: AssumptionsSectionProps) =>
     },
     {
       assumption: 'Non-ISA withdrawal tax treatment',
-      value: `${formatRate(UK_CGT_BASIC_RATE * 100)} CGT rate with ${formatMoney(UK_CGT_ANNUAL_EXEMPT_AMOUNT)} annual exempt amount`,
+      value: `${formatRate(UK_CGT_BASIC_RATE * 100)} CGT rate with ${formatMoney(cgtAnnualExemptAmount)} annual exempt amount`,
       usage: 'At extraction, CGT is applied only to realized gains on non-ISA withdrawals, assuming basic-rate CGT treatment.',
     },
     {
@@ -156,6 +165,9 @@ export const AssumptionsSection = ({ data, inputs }: AssumptionsSectionProps) =>
         <ul className="chart-takeaways">
           <li>
             <strong>ISA-first contribution rule:</strong> monthly surplus is allocated to ISA up to the annual ISA limit, then overflow goes to non-ISA.
+          </li>
+          <li>
+            <strong>Couple-mode tax efficiency:</strong> in couple mode, the model assumes both ISA allowances are fully used before non-ISA investing.
           </li>
           <li>
             <strong>FI asset scope:</strong> FI withdrawals are based on ISA + non-ISA assets only (pension and home equity are excluded).

@@ -14,6 +14,7 @@ export const chartDescriptions = {
 export const incomeFields: { key: keyof ForecastInputs; label: string; step?: number }[] = [
   { key: 'income', label: 'Monthly income (take home pay) (£)' },
   { key: 'expenses', label: 'Monthly expenses (excluding mortgage) (£)' },
+  { key: 'pensionableMonthlyPay', label: 'Monthly gross salary (£)' },
 ];
 
 export const currentAssetsFields: { key: keyof ForecastInputs; label: string; step?: number }[] = [
@@ -36,7 +37,6 @@ export const propertyFields: { key: keyof ForecastInputs; label: string; step?: 
 
 export const pensionFields: { key: keyof ForecastInputs; label: string; step?: number }[] = [
   { key: 'pensionAssets', label: 'Current pension pot (£)' },
-  { key: 'pensionableMonthlyPay', label: 'Pensionable monthly pay (£)' },
   { key: 'pensionContribution', label: 'Workplace personal contribution (% of pensionable pay or £)', step: 0.1 },
   { key: 'employerPensionContributionRate', label: 'Employer contribution (% of pensionable pay)', step: 0.1 },
   { key: 'pensionInterestRate', label: 'Pension interest rate (%)', step: 0.1 },
@@ -50,7 +50,6 @@ export const advancedAssumptionsFields: { key: keyof ForecastInputs; label: stri
   { key: 'inflationRate', label: 'Inflation rate (%)', step: 0.1 },
   { key: 'wageIncreaseRate', label: 'Wage increase rate (%)', step: 0.1 },
   { key: 'extractionRate', label: 'Extraction rate (%)', step: 0.1 },
-  { key: 'isaAnnualContribution', label: 'Annual ISA contribution limit (£)', step: 1000 },
 ];
 
 const fiBasisTooltipText = (extractionRate: number) =>
@@ -75,6 +74,8 @@ export const kpiTooltipText = (label: string, extractionRate: number): string | 
 export const inputTooltips: Partial<Record<keyof ForecastInputs, string>> = {
   income: 'Your monthly take-home household income after tax and after workplace pension payroll deductions.',
   expenses: 'Your monthly household spending excluding mortgage repayments.',
+  householdMode:
+    'Choose whether assumptions apply to an individual or a couple household; this changes tax assumptions and the automatic annual ISA contribution limit.',
   isaAssets: 'Current balance held in ISA accounts.',
   nonIsaAssets: 'Current balance held outside ISA wrappers (taxable investments/cash).',
   isaRate: 'Expected annual ISA growth rate before inflation.',
@@ -88,7 +89,8 @@ export const inputTooltips: Partial<Record<keyof ForecastInputs, string>> = {
   mortgageInterestRate: 'Annual mortgage interest rate.',
   homeAppreciationRate: 'Expected annual home value growth rate.',
   pensionAssets: 'Current total pension pot value.',
-  pensionableMonthlyPay: 'Monthly pensionable pay used for workplace pension percentage calculations.',
+  pensionableMonthlyPay:
+    'Your gross monthly employment salary used to calculate workplace pension contributions through payroll, including both your employee contribution and your employer contribution.',
   pensionContribution:
     'Your workplace personal contribution. In this net-pay model it increases pension growth but is not deducted again from monthly savings.',
   employerPensionContributionRate: 'Employer pension contribution percentage of pensionable pay.',
@@ -96,5 +98,5 @@ export const inputTooltips: Partial<Record<keyof ForecastInputs, string>> = {
   pensionTaxReliefRate: 'Tax relief rate applied to SIPP contributions.',
   sippContribution: 'Net SIPP contribution paid from take-home cash each month.',
   extractionRate: 'Annual extraction rate used for FI checks and passive income projections.',
-  isaAnnualContribution: 'Annual ISA contribution allowance used as a cap in projections.',
+  isaAnnualContribution: 'Annual ISA contribution allowance cap used in projections based on household mode.',
 };

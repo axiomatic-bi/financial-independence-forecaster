@@ -196,6 +196,51 @@ describe('calculateForecast', () => {
     expect(result.withdrawal_39_annual).toBeCloseTo(10836, 5);
   });
 
+  it('uses higher couple-mode CGT exempt amount for non-ISA withdrawals', () => {
+    const result = calculateForecast({
+      householdMode: 'couple',
+      income: 0,
+      expenses: 0,
+      isaAssets: 0,
+      isaRate: 0,
+      nonIsaAssets: 300000,
+      nonIsaCostBasis: 100000,
+      nonIsaRate: 0,
+      months: 0,
+      pensionInterestRate: 0,
+    });
+
+    expect(result.withdrawal_39_annual).toBeCloseTo(11376, 5);
+  });
+
+  it('applies automatic ISA allowance by household mode', () => {
+    const individualResult = calculateForecast({
+      householdMode: 'individual',
+      income: 50000,
+      expenses: 0,
+      isaAssets: 0,
+      isaRate: 0,
+      nonIsaAssets: 0,
+      nonIsaRate: 0,
+      months: 1,
+      pensionInterestRate: 0,
+    });
+    const coupleResult = calculateForecast({
+      householdMode: 'couple',
+      income: 50000,
+      expenses: 0,
+      isaAssets: 0,
+      isaRate: 0,
+      nonIsaAssets: 0,
+      nonIsaRate: 0,
+      months: 1,
+      pensionInterestRate: 0,
+    });
+
+    expect(individualResult.isa_values[1]).toBeCloseTo(20000, 5);
+    expect(coupleResult.isa_values[1]).toBeCloseTo(40000, 5);
+  });
+
   it('calculates total_gain from full initial wealth baseline', () => {
     const result = calculateForecast({
       income: 0,

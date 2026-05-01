@@ -1,9 +1,17 @@
-import type { ForecastResult, PensionType } from '../types/forecast';
+import type { ForecastResult, HouseholdMode, PensionType } from '../types/forecast';
 
 const FI_EVALUATION_MONTHS = 40 * 12;
 const DEFAULT_EXTRACTION_RATE = 3.9;
-const UK_CGT_ANNUAL_EXEMPT_AMOUNT = 3000;
+const UK_CGT_ANNUAL_EXEMPT_AMOUNT_INDIVIDUAL = 3000;
 const UK_CGT_BASIC_RATE = 0.18;
+const ISA_ANNUAL_ALLOWANCE_INDIVIDUAL = 20000;
+const ISA_ANNUAL_ALLOWANCE_COUPLE = 40000;
+
+export const getIsaAnnualContributionForHousehold = (householdMode: HouseholdMode): number =>
+  householdMode === 'couple' ? ISA_ANNUAL_ALLOWANCE_COUPLE : ISA_ANNUAL_ALLOWANCE_INDIVIDUAL;
+
+export const getCgtAnnualExemptAmountForHousehold = (householdMode: HouseholdMode): number =>
+  householdMode === 'couple' ? UK_CGT_ANNUAL_EXEMPT_AMOUNT_INDIVIDUAL * 2 : UK_CGT_ANNUAL_EXEMPT_AMOUNT_INDIVIDUAL;
 
 const orZero = (value: number | null | undefined): number => value ?? 0;
 
@@ -24,7 +32,7 @@ const calculateNonIsaNetWithdrawal = (
   nonIsaValue: number,
   nonIsaCostBasis: number,
   extractionRatePercent: number,
-  cgtAnnualExemptAmount: number = UK_CGT_ANNUAL_EXEMPT_AMOUNT,
+  cgtAnnualExemptAmount: number = UK_CGT_ANNUAL_EXEMPT_AMOUNT_INDIVIDUAL,
   cgtRate: number = UK_CGT_BASIC_RATE,
 ): number => {
   if (nonIsaValue <= 0 || extractionRatePercent <= 0) {
@@ -259,7 +267,9 @@ export const calculateForecast = (input: {
   sippType?: PensionType;
   sippContribution?: number;
   sippRate?: number;
+  householdMode?: HouseholdMode;
 }): ForecastResult => {
+  const householdMode = input.householdMode ?? 'individual';
   const income = orZero(input.income);
   const expenses = orZero(input.expenses);
   const isaAssets = orZero(input.isaAssets);
@@ -282,7 +292,8 @@ export const calculateForecast = (input: {
   const pensionTaxReliefRate = orZero(input.pensionTaxReliefRate ?? 20);
   const inflationRate = orZero(input.inflationRate ?? 2);
   const wageIncreaseRate = orZero(input.wageIncreaseRate ?? 3);
-  const isaAnnualContribution = orZero(input.isaAnnualContribution ?? 40000);
+  const isaAnnualContribution = orZero(input.isaAnnualContribution ?? getIsaAnnualContributionForHousehold(householdMode));
+  const cgtAnnualExemptAmount = getCgtAnnualExemptAmountForHousehold(householdMode);
   const extractionRate = orZero(input.extractionRate ?? DEFAULT_EXTRACTION_RATE);
   const pensionableMonthlyPay = input.pensionableMonthlyPay == null ? income : orZero(input.pensionableMonthlyPay);
   const sippType = input.sippType ?? 'fixed';
@@ -420,7 +431,7 @@ export const calculateForecast = (input: {
     if (yearsUntilCovered === null) {
       const annualWithdrawal =
         currentIsa * (extractionRate / 100) +
-        calculateNonIsaNetWithdrawal(currentNonIsa, currentNonIsaCostBasis, extractionRate);
+        calculateNonIsaNetWithdrawal(currentNonIsa, currentNonIsaCostBasis, extractionRate, cgtAnnualExemptAmount);
       const annualExpenses = (currentExpenses + currentMortgagePayment) * 12;
       if (annualWithdrawal >= annualExpenses) {
         yearsUntilCovered = month / 12;
@@ -441,7 +452,7 @@ export const calculateForecast = (input: {
     : nonIsaCostBasis;
   const withdrawal39Annual =
     finalIsa * (extractionRate / 100) +
-    calculateNonIsaNetWithdrawal(finalNonIsa, finalNonIsaCostBasis, extractionRate);
+    calculateNonIsaNetWithdrawal(finalNonIsa, finalNonIsaCostBasis, extractionRate, cgtAnnualExemptAmount);
   const finalMonthlyExpenses = expenseValues.length ? expenseValues[expenseValues.length - 1] : expenses;
   const finalAnnualExpenses = finalMonthlyExpenses * 12;
 
@@ -495,5 +506,7 @@ export const calculateForecast = (input: {
     fi_month_index: fiMonthIndex,
     fi_evaluation_end_month: fiEvaluationEndMonth,
     extraction_rate: extractionRate,
+    household_mode: householdMode,
+    cgt_annual_exempt_amount: cgtAnnualExemptAmount,
   };
 };
