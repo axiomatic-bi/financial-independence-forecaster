@@ -16,10 +16,6 @@ export const PassiveIncomeSection = ({ data, dataColors, isaAnnualContribution }
       <h3 className="section-heading">Passive Income</h3>
       <div className="narrative-copy">
         <p>{chartDescriptions.passiveIncome}</p>
-        <p>
-          Assumption: monthly surplus is directed to tax-efficient ISA contributions first, up to your selected annual ISA allowance
-          (£{Math.round(isaAnnualContribution).toLocaleString('en-GB')}); any remaining surplus is invested outside ISA wrappers.
-        </p>
         <ul className="chart-takeaways">
           <li>
             <strong>FI achieved year:</strong> {data.fiAchievedText}
@@ -34,6 +30,13 @@ export const PassiveIncomeSection = ({ data, dataColors, isaAnnualContribution }
             <strong>Withdrawal minus total spending in {data.latestIncomeSnapshot.year}:</strong> {formatCompactCurrency(data.latestCoverageGap)}
           </li>
         </ul>
+        <p className="assumption-note">
+          <em>
+            Assumption: monthly surplus is directed to tax-efficient ISA contributions first, up to your selected annual ISA
+            allowance (£{Math.round(isaAnnualContribution).toLocaleString('en-GB')}); any remaining surplus is invested outside ISA
+            wrappers.
+          </em>
+        </p>
       </div>
       <article className="plot-card">
         <h4 className="section-subheading">Potential Passive Income vs Projected Expenses</h4>

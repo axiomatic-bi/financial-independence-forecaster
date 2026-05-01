@@ -176,6 +176,10 @@
   line-height: 1.45;
 }
 
+.assumptions-section {
+  grid-template-columns: 1fr;
+}
+
 .chart-takeaways {
   margin: 0;
   padding-left: 1rem;
@@ -184,6 +188,16 @@
   color: var(--text-secondary);
   font-size: 0.84rem;
   line-height: 1.4;
+}
+
+.chart-takeaways + p {
+  margin-top: var(--space-2);
+}
+
+.assumption-note {
+  color: color-mix(in srgb, var(--text-secondary) 84%, transparent);
+  font-size: 0.75rem;
+  letter-spacing: 0.01em;
 }
 
 .chart-takeaways strong {

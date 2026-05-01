@@ -75,6 +75,12 @@ export const SavingsSection = ({ data, dataColors, expandedSavingsGroups, onTogg
               {formatCompactCurrency(data.latestSavingsSnapshot.monthlyPensionContribution)}
             </li>
           </ul>
+          <p className="assumption-note">
+            <em>
+              Assumption: monthly income is modeled as take-home pay; monthly surplus shown here is allocated to ISA first (up to the ISA
+              cap) and then to non-ISA.
+            </em>
+          </p>
         </div>
         <article className="plot-card">
           <h4 className="section-subheading">Monthly Cash Flow Allocation</h4>

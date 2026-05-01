@@ -7,6 +7,9 @@ interface AssumptionsSectionProps {
   inputs: ForecastInputs;
 }
 
+const UK_CGT_ANNUAL_EXEMPT_AMOUNT = 3000;
+const UK_CGT_BASIC_RATE = 0.18;
+
 const formatRate = (value: number): string => `${value.toFixed(1)}%`;
 
 const formatMoney = (value: number): string => formatCompactCurrency(value);
@@ -71,6 +74,16 @@ export const AssumptionsSection = ({ data, inputs }: AssumptionsSectionProps) =>
       usage: 'Monthly surplus is allocated to ISA first up to this cap, then to non-ISA.',
     },
     {
+      assumption: 'Surplus allocation order',
+      value: 'ISA first, then Non-ISA',
+      usage: 'Each month, surplus is directed to ISA up to the allowance limit before any excess is assigned to non-ISA investments.',
+    },
+    {
+      assumption: 'No negative monthly investing',
+      value: 'Floor at £0 for investable surplus',
+      usage: 'When monthly cash flow is negative, the model does not create negative ISA/non-ISA contributions.',
+    },
+    {
       assumption: 'Workplace pension personal contribution',
       value: pensionContributionLabel(inputs),
       usage: 'Contributes to pension accumulation according to selected contribution type.',
@@ -101,6 +114,16 @@ export const AssumptionsSection = ({ data, inputs }: AssumptionsSectionProps) =>
       usage: 'Annual ISA + non-ISA withdrawal rate used for FI checks and passive-income projections.',
     },
     {
+      assumption: 'Non-ISA withdrawal tax treatment',
+      value: `${formatRate(UK_CGT_BASIC_RATE * 100)} CGT rate with ${formatMoney(UK_CGT_ANNUAL_EXEMPT_AMOUNT)} annual exempt amount`,
+      usage: 'At extraction, CGT is applied only to realized gains on non-ISA withdrawals, assuming basic-rate CGT treatment.',
+    },
+    {
+      assumption: 'Extraction income-tax context',
+      value: 'Basic-rate CGT assumption (no salary at extraction)',
+      usage: 'Withdrawal tax treatment assumes no active salary income at extraction point, consistent with basic-rate CGT modeling.',
+    },
+    {
       assumption: 'FI asset basis',
       value: 'ISA and Non-ISA only',
       usage: 'Pension and home equity are excluded from FI withdrawal coverage.',
@@ -109,6 +132,11 @@ export const AssumptionsSection = ({ data, inputs }: AssumptionsSectionProps) =>
       assumption: 'FI spending basis',
       value: 'Inflation-adjusted annual expenses, including mortgage where applicable',
       usage: 'FI is reached when projected withdrawal covers projected annual spending.',
+    },
+    {
+      assumption: 'FI evaluation window',
+      value: 'Up to 40 years (independent FI run)',
+      usage: 'FI date and related FI metrics are evaluated using a dedicated 40-year projection, separate from chart display horizon.',
     },
     {
       assumption: 'Current model outcome under these assumptions',
@@ -127,13 +155,19 @@ export const AssumptionsSection = ({ data, inputs }: AssumptionsSectionProps) =>
         </p>
         <ul className="chart-takeaways">
           <li>
-            <strong>Coverage ratio in {data.latestIncomeSnapshot.year}:</strong> {data.latestCoverageRatio.toFixed(2)}x
+            <strong>ISA-first contribution rule:</strong> monthly surplus is allocated to ISA up to the annual ISA limit, then overflow goes to non-ISA.
           </li>
           <li>
-            <strong>FI status:</strong> {data.fiAchievedText}
+            <strong>FI asset scope:</strong> FI withdrawals are based on ISA + non-ISA assets only (pension and home equity are excluded).
           </li>
           <li>
-            <strong>Mortgage status:</strong> {data.mortgagePaidOffText}
+            <strong>Non-ISA tax at extraction:</strong> realized gains are modeled with UK basic-rate CGT (18%) after the annual exempt amount.
+          </li>
+          <li>
+            <strong>FI test basis:</strong> annual withdrawal at your extraction rate ({formatRate(inputs.extractionRate)}) must cover inflation-adjusted annual spending, including mortgage where relevant.
+          </li>
+          <li>
+            <strong>Projection horizon for FI checks:</strong> FI timing is evaluated on a dedicated 40-year run, even if your visible chart horizon is shorter.
           </li>
         </ul>
       </div>

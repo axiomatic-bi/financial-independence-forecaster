@@ -68,6 +68,12 @@ export const AssetsSection = ({ data, dataColors, expandedAssetGroups, onToggleA
           <strong>Growth from first to final year:</strong> {data.assetGrowthMultiple ? `${data.assetGrowthMultiple.toFixed(1)}x` : 'N/A (starting assets are £0)'}
         </li>
       </ul>
+      <p className="assumption-note">
+        <em>
+          Assumption: ISA, non-ISA, pension, and home values grow using constant annual rates from Inputs (before inflation adjustments
+          shown in separate real-value metrics).
+        </em>
+      </p>
     </div>
     <article className="plot-card">
       <h4 className="section-subheading">Asset Breakdown Over Time</h4>
