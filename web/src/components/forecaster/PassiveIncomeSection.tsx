@@ -112,7 +112,7 @@ export const PassiveIncomeSection = ({ data, dataColors, isaAnnualContribution }
         </div>
       </article>
 
-      <table className="section-table">
+      <table className="section-table section-table--passive">
         <thead>
           <tr>
             <th>Metric</th>
