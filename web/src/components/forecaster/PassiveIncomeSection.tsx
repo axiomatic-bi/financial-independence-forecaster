@@ -14,12 +14,12 @@ interface PassiveIncomeSectionProps {
 export const PassiveIncomeSection = ({ data, dataColors, isaAnnualContribution, advice }: PassiveIncomeSectionProps) => (
   <section className="passive-income-section">
     <div className="passive-income-inner narrative-chart">
-      <h3 className="section-heading">Passive Income</h3>
+      <h3 className="section-heading">Passive income</h3>
       <div className="narrative-copy">
         <p>{chartDescriptions.passiveIncome}</p>
         <ul className="chart-takeaways">
           <li>
-            <strong>Financial Independence (FI) achieved year:</strong> {data.fiAchievedText}
+            <strong>Financial independence (FI) achieved year:</strong> {data.fiAchievedText}
           </li>
           <li>
             <strong>Mortgage paid off year:</strong> {data.mortgagePaidOffText}
@@ -48,7 +48,7 @@ export const PassiveIncomeSection = ({ data, dataColors, isaAnnualContribution, 
         </p>
       </div>
       <article className="plot-card">
-        <h4 className="section-subheading">Potential Passive Income vs Projected Expenses</h4>
+        <h4 className="section-subheading">Potential passive income vs projected expenses</h4>
         <div className="chart-wrap">
           <ResponsiveContainer width="100%" height={360}>
             <LineChart data={data.withdrawalChartData} margin={{ top: 16, right: 90, left: 12, bottom: 8 }}>
@@ -67,7 +67,7 @@ export const PassiveIncomeSection = ({ data, dataColors, isaAnnualContribution, 
                   stroke="#94a3b8"
                   strokeDasharray="6 4"
                   label={{
-                    value: 'Mortgage Paid Off',
+                    value: 'Mortgage paid off',
                     position: 'right',
                     offset: 12,
                     fill: '#e2e8f0',
@@ -85,7 +85,7 @@ export const PassiveIncomeSection = ({ data, dataColors, isaAnnualContribution, 
                   stroke="#94a3b8"
                   strokeDasharray="6 4"
                   label={{
-                    value: 'FI Achieved',
+                    value: 'FI achieved',
                     position: 'right',
                     offset: 12,
                     fill: '#e2e8f0',
@@ -105,7 +105,7 @@ export const PassiveIncomeSection = ({ data, dataColors, isaAnnualContribution, 
                 strokeWidth={2}
                 dot={false}
                 activeDot={false}
-                name={data.vm.withdrawalSeries[0]?.name ?? 'Annual Withdrawal'}
+                name={data.vm.withdrawalSeries[0]?.name ?? 'Annual withdrawal'}
               />
               <Line
                 type="monotone"
@@ -114,7 +114,7 @@ export const PassiveIncomeSection = ({ data, dataColors, isaAnnualContribution, 
                 strokeWidth={2}
                 dot={false}
                 activeDot={false}
-                name="Annual Expenses (Incl. Mortgage)"
+                name="Annual expenses (incl. mortgage)"
               />
             </LineChart>
           </ResponsiveContainer>
@@ -134,11 +134,11 @@ export const PassiveIncomeSection = ({ data, dataColors, isaAnnualContribution, 
           {data.vm.fiHealthRows.map((row) => (
             <tr key={row.label}>
               <td>
-                {row.label === 'Liquid Runway (Years)' ? (
+                {row.label === 'Liquid runway (years)' ? (
                   <span className="label-with-info">
                     <span>{row.label}</span>
                     <span className="tooltip-wrap">
-                      <button type="button" className="info-icon" aria-label="About Liquid Runway">
+                      <button type="button" className="info-icon" aria-label="About liquid runway">
                         i
                       </button>
                       <span className="tooltip-content tooltip-content--right" role="tooltip">
@@ -146,11 +146,11 @@ export const PassiveIncomeSection = ({ data, dataColors, isaAnnualContribution, 
                       </span>
                     </span>
                   </span>
-                ) : row.label === 'FI Coverage Ratio' ? (
+                ) : row.label === 'FI coverage ratio' ? (
                   <span className="label-with-info">
                     <span>{row.label}</span>
                     <span className="tooltip-wrap">
-                      <button type="button" className="info-icon" aria-label="About FI Coverage Ratio">
+                      <button type="button" className="info-icon" aria-label="About FI coverage ratio">
                         i
                       </button>
                       <span className="tooltip-content tooltip-content--right" role="tooltip">

@@ -88,7 +88,7 @@ export const InputsPanel = ({ inputs, elapsedMs, isOpen, onInputsChange }: Input
         />
       ))}
 
-      <h3 className="inputs-subtitle">Current Assets</h3>
+      <h3 className="inputs-subtitle">Current assets</h3>
       {currentAssetsFields.map(({ key, label, step }) => (
         <NumberInputField
           key={key}
@@ -101,7 +101,7 @@ export const InputsPanel = ({ inputs, elapsedMs, isOpen, onInputsChange }: Input
         />
       ))}
 
-      <h3 className="inputs-subtitle">Growth Assumptions</h3>
+      <h3 className="inputs-subtitle">Growth assumptions</h3>
       {growthAssumptionsFields.map(({ key, label, step }) => (
         <NumberInputField
           key={key}
@@ -115,7 +115,7 @@ export const InputsPanel = ({ inputs, elapsedMs, isOpen, onInputsChange }: Input
       ))}
 
       <div className="field">
-        {renderInputLabel('forecastYears', 'Forecast Period (Years)')}
+        {renderInputLabel('forecastYears', 'Forecast period (years)')}
         <input
           id="input-forecastYears"
           name="input-forecastYears"
@@ -136,10 +136,10 @@ export const InputsPanel = ({ inputs, elapsedMs, isOpen, onInputsChange }: Input
         <small className="range-value">{inputs.forecastYears} years</small>
       </div>
 
-      <h3 className="inputs-subtitle">Advanced Inputs</h3>
+      <h3 className="inputs-subtitle">Advanced inputs</h3>
 
       <details className="advanced-group">
-        <summary>Property & Mortgage</summary>
+        <summary>Property & mortgage</summary>
         {propertyFields.map(({ key, label, step }) => (
           <NumberInputField
             key={key}
@@ -157,7 +157,7 @@ export const InputsPanel = ({ inputs, elapsedMs, isOpen, onInputsChange }: Input
         <summary>Pension</summary>
         <div className="field">
           <label htmlFor="input-pensionType" className="label-with-info">
-            <span>Contribution Type</span>
+            <span>Contribution type</span>
           </label>
           <select
             id="input-pensionType"
@@ -165,8 +165,8 @@ export const InputsPanel = ({ inputs, elapsedMs, isOpen, onInputsChange }: Input
             value={inputs.pensionType}
             onChange={(event) => onInputsChange((prev) => ({ ...prev, pensionType: event.target.value as ForecastInputs['pensionType'] }))}
           >
-            <option value="percentage">Percentage of Pensionable Pay</option>
-            <option value="fixed">Fixed Amount</option>
+            <option value="percentage">Percentage of pensionable pay</option>
+            <option value="fixed">Fixed amount</option>
           </select>
         </div>
         {pensionFields.map(({ key, label, step }) => (
@@ -181,17 +181,17 @@ export const InputsPanel = ({ inputs, elapsedMs, isOpen, onInputsChange }: Input
           />
         ))}
         <div className="field">
-          {renderInputLabel('pensionTaxReliefRate', 'Pension Tax Relief')}
+          {renderInputLabel('pensionTaxReliefRate', 'Pension tax relief')}
           <select
             id="input-pensionTaxReliefRate"
             name="input-pensionTaxReliefRate"
             value={inputs.pensionTaxReliefRate}
             onChange={(event) => onInputsChange((prev) => ({ ...prev, pensionTaxReliefRate: Number(event.target.value) }))}
           >
-            <option value={0}>No Relief (0%)</option>
-            <option value={20}>Basic Rate (20%)</option>
-            <option value={40}>Higher Rate (40%)</option>
-            <option value={45}>Additional Rate (45%)</option>
+            <option value={0}>No relief (0%)</option>
+            <option value={20}>Basic rate (20%)</option>
+            <option value={40}>Higher rate (40%)</option>
+            <option value={45}>Additional rate (45%)</option>
           </select>
         </div>
         {sippFields.map(({ key, label, step }) => (
@@ -208,7 +208,7 @@ export const InputsPanel = ({ inputs, elapsedMs, isOpen, onInputsChange }: Input
       </details>
 
       <details className="advanced-group">
-        <summary>Forecast Assumptions</summary>
+        <summary>Forecast assumptions</summary>
         {advancedAssumptionsFields.map(({ key, label, step }) => (
           <NumberInputField
             key={key}

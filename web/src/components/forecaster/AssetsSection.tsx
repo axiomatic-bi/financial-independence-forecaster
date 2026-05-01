@@ -48,7 +48,7 @@ interface AssetsSectionProps {
 
 const assetTableLabel = (label: string): string => {
   if (label === 'ISA') {
-    return 'ISA Assets';
+    return 'ISA assets';
   }
   return label;
 };
@@ -85,7 +85,7 @@ export const AssetsSection = ({ data, dataColors, advice, expandedAssetGroups, o
       </p>
     </div>
     <article className="plot-card">
-      <h4 className="section-subheading">Asset Breakdown Over Time</h4>
+      <h4 className="section-subheading">Asset breakdown over time</h4>
       <div className="chart-wrap">
         <ResponsiveContainer width="100%" height={360}>
           <AreaChart data={data.assetChartData} margin={{ top: 16, right: 8, left: 12, bottom: 8 }}>
@@ -94,10 +94,10 @@ export const AssetsSection = ({ data, dataColors, advice, expandedAssetGroups, o
             <YAxis stroke="#c0ccec" tickFormatter={formatCompactCurrency} />
             <Tooltip content={renderAssetTooltip} />
             <Legend />
-            <Area type="monotone" dataKey="isa" stackId="1" stroke={dataColors.isa} fill={dataColors.isa} name="ISA Assets" />
-            <Area type="monotone" dataKey="nonIsa" stackId="1" stroke={dataColors.nonIsa} fill={dataColors.nonIsa} name="Non-ISA Assets" />
+            <Area type="monotone" dataKey="isa" stackId="1" stroke={dataColors.isa} fill={dataColors.isa} name="ISA assets" />
+            <Area type="monotone" dataKey="nonIsa" stackId="1" stroke={dataColors.nonIsa} fill={dataColors.nonIsa} name="Non-ISA assets" />
             <Area type="monotone" dataKey="pension" stackId="1" stroke={dataColors.pension} fill={dataColors.pension} name="Pension" />
-            <Area type="monotone" dataKey="homeEquity" stackId="1" stroke={dataColors.homeEquity} fill={dataColors.homeEquity} name="Home Equity" />
+            <Area type="monotone" dataKey="homeEquity" stackId="1" stroke={dataColors.homeEquity} fill={dataColors.homeEquity} name="Home equity" />
           </AreaChart>
         </ResponsiveContainer>
       </div>
@@ -113,13 +113,13 @@ const AssetsTable = ({
   onToggleAssetGroup,
 }: Pick<AssetsSectionProps, 'data' | 'expandedAssetGroups' | 'onToggleAssetGroup'>) => {
   const investmentChildren = data.vm.netWorthRows.filter(
-    (row) => row.label === 'ISA Investments' || row.label === 'Non-ISA Investments (GIA)',
+    (row) => row.label === 'ISA investments' || row.label === 'Non-ISA investments (GIA)',
   );
   const investmentParentValues = metricColumns.map((_, index) =>
     formatTableCurrency(investmentChildren.reduce((sum, row) => sum + parseCurrencyValue(row.values[index] ?? '£0'), 0)),
   );
   const primaryRows = data.vm.netWorthRows.filter(
-    (row) => row.label !== 'ISA Investments' && row.label !== 'Non-ISA Investments (GIA)',
+    (row) => row.label !== 'ISA investments' && row.label !== 'Non-ISA investments (GIA)',
   );
 
   return (
@@ -141,7 +141,7 @@ const AssetsTable = ({
                 className="table-expand-button"
                 onClick={() => onToggleAssetGroup('investments')}
                 aria-expanded={expandedAssetGroups.investments ? 'true' : 'false'}
-                aria-label={expandedAssetGroups.investments ? 'Collapse Investments' : 'Expand Investments'}
+                aria-label={expandedAssetGroups.investments ? 'Collapse investments' : 'Expand investments'}
               >
                 <span className="table-expand-icon" aria-hidden="true">
                   <span className="table-expand-symbol">{expandedAssetGroups.investments ? '-' : '+'}</span>
@@ -169,7 +169,7 @@ const AssetsTable = ({
             : null}
         </Fragment>
         {primaryRows.map((row) => (
-          <tr key={row.label} className={row.label === "Real Net Worth (Today's £)" ? 'highlight-row' : ''}>
+          <tr key={row.label} className={row.label === "Real net worth (today's £)" ? 'highlight-row' : ''}>
             <td>{assetTableLabel(row.label)}</td>
             {row.values.map((value, valueIndex) => (
               <td key={`${row.label}-${valueIndex}`}>

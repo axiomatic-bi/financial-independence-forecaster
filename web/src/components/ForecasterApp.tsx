@@ -195,7 +195,7 @@ export const ForecasterApp = () => {
           <span />
           <span />
         </span>
-        <span>{isInputsOpen ? 'Close Inputs' : 'Open Inputs'}</span>
+        <span>{isInputsOpen ? 'Close inputs' : 'Open inputs'}</span>
       </button>
       <div className="main">
         <InputsPanel
@@ -207,7 +207,7 @@ export const ForecasterApp = () => {
         <div className="main-body">
           <section className="content">
             <header className="hero">
-              <h1>Financial Independence Forecaster</h1>
+              <h1>Financial independence forecaster</h1>
               <p>Model your path to financial independence with scenario-based projections</p>
             </header>
             <KpiCards vm={presentation.vm} extractionRate={inputs.extractionRate} />

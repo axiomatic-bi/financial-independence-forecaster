@@ -3,7 +3,7 @@ import { formatTableCurrency, parseCurrencyValue } from '../components/forecaste
 import type { ForecasterPresentation, SavingsChartPoint, SavingsTableRow } from '../components/forecaster/types';
 import type { ForecastViewModel } from '../types/forecast';
 
-const COST_ROW_LABELS = new Set(['Living Expenses', 'Mortgage']);
+const COST_ROW_LABELS = new Set(['Living expenses', 'Mortgage']);
 
 const signedFinanceValue = (label: string, rawValue: number): number => (COST_ROW_LABELS.has(label) ? -Math.abs(rawValue) : Math.abs(rawValue));
 
@@ -38,7 +38,7 @@ export const buildForecasterPresentation = (vm: ForecastViewModel): ForecasterPr
     { label: 'ISA', value: latestAssetSnapshot.isa },
     { label: 'Non-ISA', value: latestAssetSnapshot.nonIsa },
     { label: 'Pension', value: latestAssetSnapshot.pension },
-    { label: 'Home Equity', value: latestAssetSnapshot.homeEquity },
+    { label: 'Home equity', value: latestAssetSnapshot.homeEquity },
   ].reduce(
     (largest, current) => (current.value > largest.value ? current : largest),
     { label: 'ISA', value: latestAssetSnapshot.isa },
@@ -70,19 +70,19 @@ export const buildForecasterPresentation = (vm: ForecastViewModel): ForecasterPr
     metricColumns.map((_, index) => signedFinanceValue(label, parseCurrencyValue(financeRowByLabel[label]?.[index] ?? '£0')));
   const financeValueAt = (label: string, index: number): number => financeSeries(label)[index] ?? 0;
 
-  const latestActiveIncomePostTax = financeValueAt('Active Income (Post-Tax)', metricColumns.length - 1);
-  const latestActiveIncomePreTax = financeValueAt('Active Income (Pre-Tax)', metricColumns.length - 1);
+  const latestActiveIncomePostTax = financeValueAt('Active income (post-tax)', metricColumns.length - 1);
+  const latestActiveIncomePreTax = financeValueAt('Active income (pre-tax)', metricColumns.length - 1);
   const savingsChartData: SavingsChartPoint[] = metricColumns.map((label, index) => ({
     label,
-    livingExpenses: financeValueAt('Living Expenses', index),
+    livingExpenses: financeValueAt('Living expenses', index),
     mortgage: financeValueAt('Mortgage', index),
-    sippContribution: financeValueAt('Monthly SIPP Contribution', index),
-    workplacePensionContribution: financeValueAt('Monthly Workplace Pension Contribution', index),
-    surplusIsa: financeValueAt('Monthly Surplus (ISA)', index),
-    surplusNonIsa: financeValueAt('Monthly Surplus (Non-ISA)', index),
-    monthlyPensionContribution: financeValueAt('Monthly SIPP Contribution', index) + financeValueAt('Monthly Workplace Pension Contribution', index),
-    monthlySurplus: financeValueAt('Monthly Surplus (ISA)', index) + financeValueAt('Monthly Surplus (Non-ISA)', index),
-    monthlyInvestmentGains: financeValueAt('Monthly Capital Gains (ISA)', index) + financeValueAt('Monthly Gains (Non-ISA)', index),
+    sippContribution: financeValueAt('Monthly SIPP contribution', index),
+    workplacePensionContribution: financeValueAt('Monthly workplace pension contribution', index),
+    surplusIsa: financeValueAt('Monthly surplus (ISA)', index),
+    surplusNonIsa: financeValueAt('Monthly surplus (non-ISA)', index),
+    monthlyPensionContribution: financeValueAt('Monthly SIPP contribution', index) + financeValueAt('Monthly workplace pension contribution', index),
+    monthlySurplus: financeValueAt('Monthly surplus (ISA)', index) + financeValueAt('Monthly surplus (non-ISA)', index),
+    monthlyInvestmentGains: financeValueAt('Monthly capital gains (ISA)', index) + financeValueAt('Monthly gains (non-ISA)', index),
   }));
   const latestSavingsSnapshot = savingsChartData[savingsChartData.length - 1] ?? {
     label: 'FI',
@@ -104,45 +104,45 @@ export const buildForecasterPresentation = (vm: ForecastViewModel): ForecasterPr
   const savingsTableRows: SavingsTableRow[] = [
     {
       key: 'income',
-      label: 'Active Income',
-      values: formatSeries('Active Income (Post-Tax)'),
+      label: 'Active income',
+      values: formatSeries('Active income (post-tax)'),
       children: [
-        { key: 'active-income-post-tax', label: 'Active Income (Take Home)', values: formatSeries('Active Income (Post-Tax)') },
-        { key: 'active-income-pre-tax', label: 'Active Income (Pre-Tax)', values: formatSeries('Active Income (Pre-Tax)') },
+        { key: 'active-income-post-tax', label: 'Active income (take home)', values: formatSeries('Active income (post-tax)') },
+        { key: 'active-income-pre-tax', label: 'Active income (pre-tax)', values: formatSeries('Active income (pre-tax)') },
       ],
     },
-    { key: 'living-expenses', label: 'Living Expenses', values: formatSeries('Living Expenses') },
+    { key: 'living-expenses', label: 'Living expenses', values: formatSeries('Living expenses') },
     { key: 'mortgage', label: 'Mortgage', values: formatSeries('Mortgage') },
     {
       key: 'pension',
-      label: 'Monthly Pension Contribution',
-      values: groupRowValues(['Monthly SIPP Contribution', 'Monthly Workplace Pension Contribution']),
+      label: 'Monthly pension contribution',
+      values: groupRowValues(['Monthly SIPP contribution', 'Monthly workplace pension contribution']),
       children: [
-        { key: 'sipp-contribution', label: 'Monthly SIPP Contribution', values: formatSeries('Monthly SIPP Contribution') },
+        { key: 'sipp-contribution', label: 'Monthly SIPP contribution', values: formatSeries('Monthly SIPP contribution') },
         {
           key: 'workplace-pension-contribution',
-          label: 'Monthly Workplace Pension Contribution',
-          values: formatSeries('Monthly Workplace Pension Contribution'),
+          label: 'Monthly workplace pension contribution',
+          values: formatSeries('Monthly workplace pension contribution'),
         },
       ],
     },
     {
       key: 'surplus',
-      label: 'Monthly Surplus',
-      values: groupRowValues(['Monthly Surplus (ISA)', 'Monthly Surplus (Non-ISA)']),
+      label: 'Monthly surplus',
+      values: groupRowValues(['Monthly surplus (ISA)', 'Monthly surplus (non-ISA)']),
       children: [
-        { key: 'monthly-surplus-isa', label: 'Monthly Surplus (ISA)', values: formatSeries('Monthly Surplus (ISA)') },
-        { key: 'monthly-surplus-non-isa', label: 'Monthly Surplus (Non-ISA)', values: formatSeries('Monthly Surplus (Non-ISA)') },
+        { key: 'monthly-surplus-isa', label: 'Monthly surplus (ISA)', values: formatSeries('Monthly surplus (ISA)') },
+        { key: 'monthly-surplus-non-isa', label: 'Monthly surplus (non-ISA)', values: formatSeries('Monthly surplus (non-ISA)') },
       ],
       highlight: true,
     },
     {
       key: 'gains',
-      label: 'Monthly Investment Gains',
-      values: groupRowValues(['Monthly Capital Gains (ISA)', 'Monthly Gains (Non-ISA)']),
+      label: 'Monthly investment gains',
+      values: groupRowValues(['Monthly capital gains (ISA)', 'Monthly gains (non-ISA)']),
       children: [
-        { key: 'monthly-capital-gains-isa', label: 'Monthly Capital Gains (ISA)', values: formatSeries('Monthly Capital Gains (ISA)') },
-        { key: 'monthly-gains-non-isa', label: 'Monthly Gains (Non-ISA)', values: formatSeries('Monthly Gains (Non-ISA)') },
+        { key: 'monthly-capital-gains-isa', label: 'Monthly capital gains (ISA)', values: formatSeries('Monthly capital gains (ISA)') },
+        { key: 'monthly-gains-non-isa', label: 'Monthly gains (non-ISA)', values: formatSeries('Monthly gains (non-ISA)') },
       ],
     },
   ];

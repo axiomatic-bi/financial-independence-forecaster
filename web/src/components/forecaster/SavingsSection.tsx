@@ -15,11 +15,11 @@ interface SavingsSectionProps {
 
 export const SavingsSection = ({ data, dataColors, advice, expandedSavingsGroups, onToggleSavingsGroup }: SavingsSectionProps) => {
   const savingsLegendItems = [
-    { label: 'Living Expenses', color: dataColors.livingExpenses },
+    { label: 'Living expenses', color: dataColors.livingExpenses },
     { label: 'Mortgage', color: dataColors.mortgage },
-    { label: 'Monthly Pension Contribution', color: dataColors.monthlyPensionContribution },
-    { label: 'Monthly Surplus', color: dataColors.monthlySurplus },
-    { label: 'Monthly Investment Gains', color: dataColors.monthlyInvestmentGains },
+    { label: 'Monthly pension contribution', color: dataColors.monthlyPensionContribution },
+    { label: 'Monthly surplus', color: dataColors.monthlySurplus },
+    { label: 'Monthly investment gains', color: dataColors.monthlyInvestmentGains },
   ];
 
   const renderSavingsLegend = () => (
@@ -92,7 +92,7 @@ export const SavingsSection = ({ data, dataColors, advice, expandedSavingsGroups
           </p>
         </div>
         <article className="plot-card">
-          <h4 className="section-subheading">Monthly Cash Flow Allocation</h4>
+          <h4 className="section-subheading">Monthly cash flow allocation</h4>
           <div className="chart-wrap">
             <ResponsiveContainer width="100%" height={360}>
               <BarChart data={data.savingsChartData} margin={{ top: 16, right: 8, left: 12, bottom: 8 }}>
@@ -107,16 +107,16 @@ export const SavingsSection = ({ data, dataColors, advice, expandedSavingsGroups
                   labelStyle={{ color: '#c0ccec' }}
                 />
                 <Legend content={renderSavingsLegend} />
-                <Bar dataKey="livingExpenses" stackId="costs" fill={dataColors.livingExpenses} name="Living Expenses" />
+                <Bar dataKey="livingExpenses" stackId="costs" fill={dataColors.livingExpenses} name="Living expenses" />
                 <Bar dataKey="mortgage" stackId="costs" fill={dataColors.mortgage} name="Mortgage" />
                 <Bar
                   dataKey="monthlyPensionContribution"
                   stackId="gains"
                   fill={dataColors.monthlyPensionContribution}
-                  name="Monthly Pension Contribution"
+                  name="Monthly pension contribution"
                 />
-                <Bar dataKey="monthlySurplus" stackId="gains" fill={dataColors.monthlySurplus} name="Monthly Surplus" />
-                <Bar dataKey="monthlyInvestmentGains" stackId="gains" fill={dataColors.monthlyInvestmentGains} name="Monthly Investment Gains" />
+                <Bar dataKey="monthlySurplus" stackId="gains" fill={dataColors.monthlySurplus} name="Monthly surplus" />
+                <Bar dataKey="monthlyInvestmentGains" stackId="gains" fill={dataColors.monthlyInvestmentGains} name="Monthly investment gains" />
               </BarChart>
             </ResponsiveContainer>
           </div>

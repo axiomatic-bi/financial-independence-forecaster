@@ -175,8 +175,8 @@ export const AssumptionsSection = ({ data, inputs }: AssumptionsSectionProps) =>
         <thead>
           <tr>
             <th>Assumption</th>
-            <th>Current Setting</th>
-            <th>How It Is Used In Calculations</th>
+            <th>Current setting</th>
+            <th>How it is used in calculations</th>
           </tr>
         </thead>
         <tbody>

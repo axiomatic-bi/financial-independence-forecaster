@@ -12,61 +12,61 @@ export const chartDescriptions = {
 } as const;
 
 export const incomeFields: { key: keyof ForecastInputs; label: string; step?: number }[] = [
-  { key: 'income', label: 'Monthly Income (Take Home Pay) (£)' },
-  { key: 'expenses', label: 'Monthly Expenses (Excluding Mortgage) (£)' },
+  { key: 'income', label: 'Monthly income (take home pay) (£)' },
+  { key: 'expenses', label: 'Monthly expenses (excluding mortgage) (£)' },
 ];
 
 export const currentAssetsFields: { key: keyof ForecastInputs; label: string; step?: number }[] = [
-  { key: 'isaAssets', label: 'ISA Assets (£)' },
-  { key: 'nonIsaAssets', label: 'Non-ISA Assets (£)' },
+  { key: 'isaAssets', label: 'ISA assets (£)' },
+  { key: 'nonIsaAssets', label: 'Non-ISA assets (£)' },
 ];
 
 export const growthAssumptionsFields: { key: keyof ForecastInputs; label: string; step?: number }[] = [
-  { key: 'isaRate', label: 'ISA Interest Rate (%)', step: 0.1 },
-  { key: 'nonIsaRate', label: 'Non-ISA Interest Rate (%)', step: 0.1 },
+  { key: 'isaRate', label: 'ISA interest rate (%)', step: 0.1 },
+  { key: 'nonIsaRate', label: 'Non-ISA interest rate (%)', step: 0.1 },
 ];
 
 export const propertyFields: { key: keyof ForecastInputs; label: string; step?: number }[] = [
-  { key: 'homeValue', label: 'Home Value (£)' },
-  { key: 'mortgageBalance', label: 'Remaining Mortgage Balance (£)' },
-  { key: 'mortgageTerm', label: 'Remaining Mortgage Term (Years)' },
-  { key: 'mortgageInterestRate', label: 'Mortgage Interest Rate (%)', step: 0.01 },
-  { key: 'homeAppreciationRate', label: 'Home Appreciation Rate (%)', step: 0.1 },
+  { key: 'homeValue', label: 'Home value (£)' },
+  { key: 'mortgageBalance', label: 'Remaining mortgage balance (£)' },
+  { key: 'mortgageTerm', label: 'Remaining mortgage term (years)' },
+  { key: 'mortgageInterestRate', label: 'Mortgage interest rate (%)', step: 0.01 },
+  { key: 'homeAppreciationRate', label: 'Home appreciation rate (%)', step: 0.1 },
 ];
 
 export const pensionFields: { key: keyof ForecastInputs; label: string; step?: number }[] = [
-  { key: 'pensionAssets', label: 'Current Pension Pot (£)' },
-  { key: 'pensionableMonthlyPay', label: 'Pensionable Monthly Pay (£)' },
-  { key: 'pensionContribution', label: 'Workplace Personal Contribution (% of pensionable pay or £)', step: 0.1 },
-  { key: 'employerPensionContributionRate', label: 'Employer Contribution (% of pensionable pay)', step: 0.1 },
-  { key: 'pensionInterestRate', label: 'Pension Interest Rate (%)', step: 0.1 },
+  { key: 'pensionAssets', label: 'Current pension pot (£)' },
+  { key: 'pensionableMonthlyPay', label: 'Pensionable monthly pay (£)' },
+  { key: 'pensionContribution', label: 'Workplace personal contribution (% of pensionable pay or £)', step: 0.1 },
+  { key: 'employerPensionContributionRate', label: 'Employer contribution (% of pensionable pay)', step: 0.1 },
+  { key: 'pensionInterestRate', label: 'Pension interest rate (%)', step: 0.1 },
 ];
 
 export const sippFields: { key: keyof ForecastInputs; label: string; step?: number }[] = [
-  { key: 'sippContribution', label: 'SIPP Contribution (£ per month, net)', step: 1 },
+  { key: 'sippContribution', label: 'SIPP contribution (£ per month, net)', step: 1 },
 ];
 
 export const advancedAssumptionsFields: { key: keyof ForecastInputs; label: string; step?: number }[] = [
-  { key: 'inflationRate', label: 'Inflation Rate (%)', step: 0.1 },
-  { key: 'wageIncreaseRate', label: 'Wage Increase Rate (%)', step: 0.1 },
-  { key: 'extractionRate', label: 'Extraction Rate (%)', step: 0.1 },
-  { key: 'isaAnnualContribution', label: 'Annual ISA Contribution Limit (£)', step: 1000 },
+  { key: 'inflationRate', label: 'Inflation rate (%)', step: 0.1 },
+  { key: 'wageIncreaseRate', label: 'Wage increase rate (%)', step: 0.1 },
+  { key: 'extractionRate', label: 'Extraction rate (%)', step: 0.1 },
+  { key: 'isaAnnualContribution', label: 'Annual ISA contribution limit (£)', step: 1000 },
 ];
 
 const fiBasisTooltipText = (extractionRate: number) =>
   `Financial independence (FI) here means annual ISA + non-ISA withdrawal at ${extractionRate.toFixed(1)}% covers annual expenses; pension and home equity are excluded.`;
 
 export const kpiTooltipText = (label: string, extractionRate: number): string | null => {
-  if (label === 'Financial Independence (FI) Date') {
+  if (label === 'Financial independence (FI) date') {
     return `Estimated month when FI is first reached under your current assumptions. ${fiBasisTooltipText(extractionRate)}`;
   }
-  if (label === 'Years Until FI') {
+  if (label === 'Years until FI') {
     return `Number of years from today until the model first reaches FI. ${fiBasisTooltipText(extractionRate)}`;
   }
-  if (label.includes('Passive Income at FI')) {
+  if (label.includes('Passive income at FI')) {
     return `Estimated annual withdrawal available at FI using your ${extractionRate.toFixed(1)}% extraction rate on ISA and non-ISA assets.`;
   }
-  if (label === 'Savings Rate at FI') {
+  if (label === 'Savings rate at FI') {
     return 'Monthly savings divided by monthly income at the FI point in the projection.';
   }
   return null;

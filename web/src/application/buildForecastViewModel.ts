@@ -69,16 +69,16 @@ const buildFinanceRows = (result: ForecastResult, isaAnnualContribution: number)
     Math.max(0, value - monthlySurplusIsaValues[index]),
   );
   const metrics: [string, number[]][] = [
-    ['Active Income (Post-Tax)', result.income_values],
-    ['Active Income (Pre-Tax)', result.active_income_pre_tax_values],
-    ['Living Expenses', result.expense_values],
+    ['Active income (post-tax)', result.income_values],
+    ['Active income (pre-tax)', result.active_income_pre_tax_values],
+    ['Living expenses', result.expense_values],
     ['Mortgage', result.mortgage_payment_values],
-    ['Monthly SIPP Contribution', result.sipp_contribution_values],
-    ['Monthly Workplace Pension Contribution', result.workplace_pension_contribution_values],
-    ['Monthly Capital Gains (ISA)', result.isa_capital_gain_values],
-    ['Monthly Gains (Non-ISA)', result.non_isa_gain_values],
-    ['Monthly Surplus (ISA)', monthlySurplusIsaValues],
-    ['Monthly Surplus (Non-ISA)', monthlySurplusNonIsaValues],
+    ['Monthly SIPP contribution', result.sipp_contribution_values],
+    ['Monthly workplace pension contribution', result.workplace_pension_contribution_values],
+    ['Monthly capital gains (ISA)', result.isa_capital_gain_values],
+    ['Monthly gains (non-ISA)', result.non_isa_gain_values],
+    ['Monthly surplus (ISA)', monthlySurplusIsaValues],
+    ['Monthly surplus (non-ISA)', monthlySurplusNonIsaValues],
   ];
   return metrics.map(([label, series]) => ({
     label,
@@ -117,8 +117,8 @@ const buildFiHealthRows = (result: ForecastResult): TableRow[] => {
   });
 
   return [
-    { label: 'Liquid Runway (Years)', values: liquidRunwayValues },
-    { label: 'FI Coverage Ratio', values: fiCoverageRatioValues },
+    { label: 'Liquid runway (years)', values: liquidRunwayValues },
+    { label: 'FI coverage ratio', values: fiCoverageRatioValues },
   ];
 };
 
@@ -126,10 +126,10 @@ const buildNetWorthRows = (result: ForecastResult): TableRow[] => {
   const maxMonth = result.income_values.length - 1;
   const fiMonth = result.fi_month_index ?? maxMonth;
   const metrics: [string, number[]][] = [
-    ['Pension Pot', result.pension_values],
-    ['ISA Investments', result.isa_values],
-    ['Non-ISA Investments (GIA)', result.non_isa_values],
-    ['Home Equity', result.home_equity_values],
+    ['Pension pot', result.pension_values],
+    ['ISA investments', result.isa_values],
+    ['Non-ISA investments (GIA)', result.non_isa_values],
+    ['Home equity', result.home_equity_values],
   ];
   const rows = metrics.map(([label, series]) => ({
     label,
@@ -157,8 +157,8 @@ const buildNetWorthRows = (result: ForecastResult): TableRow[] => {
   });
   return [
     ...rows,
-    { label: 'Total Net Worth', values: totalValues, isTotal: true },
-    { label: "Real Net Worth (Today's £)", values: realNetWorthValues },
+    { label: 'Total net worth', values: totalValues, isTotal: true },
+    { label: "Real net worth (today's £)", values: realNetWorthValues },
   ];
 };
 
@@ -253,17 +253,17 @@ export const buildForecastViewModel = (rawInputs: ForecastInputs): ForecastViewM
   const indices = yearEndIndices(chartDates);
   const yearlyLabels = indices.map((i) => extendedIsa.dates[i].slice(0, 4));
   const assetSeries = [
-    { name: 'ISA Assets', values: sample(extendedIsa.values, indices) },
-    { name: 'Non-ISA Assets', values: sample(extendedNonIsa.values, indices) },
+    { name: 'ISA assets', values: sample(extendedIsa.values, indices) },
+    { name: 'Non-ISA assets', values: sample(extendedNonIsa.values, indices) },
     { name: 'Pension', values: sample(extendedPension.values, indices) },
-    { name: 'Home Equity', values: sample(extendedHome.values, indices) },
+    { name: 'Home equity', values: sample(extendedHome.values, indices) },
   ];
 
   const extendedExpenses = extendSeriesToYearEnd(chartResult.dates, chartResult.expense_values);
   const extendedMortgagePayments = extendSeriesToYearEnd(chartResult.dates, chartResult.mortgage_payment_values);
   const withdrawalSeries = [
     {
-      name: `${extractionRateLabel(chartResult.extraction_rate)} Annual Withdrawal`,
+      name: `${extractionRateLabel(chartResult.extraction_rate)} Annual withdrawal`,
       values: indices.map((index) => {
         const isaValue = extendedIsa.values[index] ?? 0;
         const nonIsaValue = extendedNonIsa.values[index] ?? 0;
@@ -272,17 +272,17 @@ export const buildForecastViewModel = (rawInputs: ForecastInputs): ForecastViewM
       }),
     },
     {
-      name: 'Annual Expenses (Incl. Mortgage)',
+      name: 'Annual expenses (incl. mortgage)',
       values: indices.map((index) => (extendedExpenses.values[index] + extendedMortgagePayments.values[index]) * 12),
     },
   ];
 
   return {
     kpis: [
-      { label: 'Financial Independence (FI) Date', value: fiResult.fi_date ?? 'Not reached' },
-      { label: 'Years Until FI', value: yearsText },
-      { label: `Passive Income at FI (${extractionRateLabel(fiResult.extraction_rate)})`, value: currency(fiWithdrawalAnnual) },
-      { label: 'Savings Rate at FI', value: percent(fiSavingsRate) },
+      { label: 'Financial independence (FI) date', value: fiResult.fi_date ?? 'Not reached' },
+      { label: 'Years until FI', value: yearsText },
+      { label: `Passive income at FI (${extractionRateLabel(fiResult.extraction_rate)})`, value: currency(fiWithdrawalAnnual) },
+      { label: 'Savings rate at FI', value: percent(fiSavingsRate) },
     ],
     yearlyLabels,
     assetSeries,
