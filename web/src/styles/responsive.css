@@ -96,12 +96,12 @@
   }
 
   table.section-table {
-    display: block;
+    display: table;
     width: 100%;
+    table-layout: fixed;
     max-width: 100%;
-    overflow-x: auto;
+    overflow-x: visible;
     overflow-y: visible;
-    -webkit-overflow-scrolling: touch;
   }
 
   table.section-table th,
@@ -137,13 +137,28 @@
 
   table.section-table--passive .tooltip-wrap {
     position: relative;
-    isolation: isolate;
+    z-index: 1;
+  }
+
+  table.section-table--passive .tooltip-wrap:hover,
+  table.section-table--passive .tooltip-wrap:focus-within {
+    z-index: 200;
+  }
+
+  table.section-table--passive .info-icon {
+    position: relative;
+    z-index: 1;
   }
 
   table.section-table--passive .tooltip-content,
   table.section-table--passive .tooltip-content--right {
-    z-index: 120;
-    width: min(280px, calc(100vw - 24px));
+    z-index: 201;
+    left: 0;
+    right: auto;
+    top: calc(100% + 8px);
+    transform: none;
+    width: min(280px, calc(100vw - 28px));
+    max-width: calc(100vw - 28px);
   }
 }
 
