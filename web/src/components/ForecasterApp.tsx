@@ -3,6 +3,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { buildForecastViewModel, defaultInputs } from '../application/buildForecastViewModel';
 import { buildForecasterPresentation } from '../application/buildForecasterPresentation';
 import { AssetsSection } from './forecaster/AssetsSection';
+import { AssumptionsSection } from './forecaster/AssumptionsSection';
 import { InputsPanel } from './forecaster/InputsPanel';
 import { KpiCards } from './forecaster/KpiCards';
 import { PassiveIncomeSection } from './forecaster/PassiveIncomeSection';
@@ -113,10 +114,6 @@ export const ForecasterApp = () => {
 
   return (
     <div className="app">
-      <header className="hero">
-        <h1>Financial Independence Forecaster</h1>
-        <p>Model your path to financial independence with scenario-based projections</p>
-      </header>
       <button
         type="button"
         className="panel-toggle"
@@ -138,36 +135,43 @@ export const ForecasterApp = () => {
           isOpen={isInputsOpen}
           onInputsChange={setInputs}
         />
-        <section className="content">
-          <KpiCards vm={presentation.vm} extractionRate={inputs.extractionRate} />
-          <PassiveIncomeSection
-            data={presentation}
-            dataColors={dataColors}
-            isaAnnualContribution={inputs.isaAnnualContribution}
-          />
-          <AssetsSection
-            data={presentation}
-            dataColors={dataColors}
-            expandedAssetGroups={expandedAssetGroups}
-            onToggleAssetGroup={(groupKey) =>
-              setExpandedAssetGroups((prev) => ({
-                ...prev,
-                [groupKey]: !prev[groupKey],
-              }))
-            }
-          />
-          <SavingsSection
-            data={presentation}
-            dataColors={dataColors}
-            expandedSavingsGroups={expandedSavingsGroups}
-            onToggleSavingsGroup={(groupKey) =>
-              setExpandedSavingsGroups((prev) => ({
-                ...prev,
-                [groupKey]: !prev[groupKey],
-              }))
-            }
-          />
-        </section>
+        <div className="main-body">
+          <section className="content">
+            <header className="hero">
+              <h1>Financial Independence Forecaster</h1>
+              <p>Model your path to financial independence with scenario-based projections</p>
+            </header>
+            <KpiCards vm={presentation.vm} extractionRate={inputs.extractionRate} />
+            <PassiveIncomeSection
+              data={presentation}
+              dataColors={dataColors}
+              isaAnnualContribution={inputs.isaAnnualContribution}
+            />
+            <AssetsSection
+              data={presentation}
+              dataColors={dataColors}
+              expandedAssetGroups={expandedAssetGroups}
+              onToggleAssetGroup={(groupKey) =>
+                setExpandedAssetGroups((prev) => ({
+                  ...prev,
+                  [groupKey]: !prev[groupKey],
+                }))
+              }
+            />
+            <SavingsSection
+              data={presentation}
+              dataColors={dataColors}
+              expandedSavingsGroups={expandedSavingsGroups}
+              onToggleSavingsGroup={(groupKey) =>
+                setExpandedSavingsGroups((prev) => ({
+                  ...prev,
+                  [groupKey]: !prev[groupKey],
+                }))
+              }
+            />
+            <AssumptionsSection data={presentation} inputs={inputs} />
+          </section>
+        </div>
       </div>
     </div>
   );

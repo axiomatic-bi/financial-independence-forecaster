@@ -1,10 +1,21 @@
 @media (max-width: 960px) {
-  .main { flex-direction: column; }
+  .app {
+    height: auto;
+    min-height: 100vh;
+    overflow: visible;
+  }
+
+  .main {
+    flex-direction: column;
+    overflow: visible;
+  }
+
   .panel-toggle { display: inline-flex; }
 
   .panel {
     width: 100%;
     max-height: none;
+    overflow: visible;
     border-right: 0;
     border-bottom: 1px solid var(--border);
   }
@@ -19,6 +30,11 @@
   }
 
   .kpis-inner { padding: 0; }
+
+  .content {
+    overflow: visible;
+    min-height: auto;
+  }
 }
 
 @media (max-width: 1200px) {
