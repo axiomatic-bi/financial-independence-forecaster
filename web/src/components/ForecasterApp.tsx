@@ -127,7 +127,11 @@ export const ForecasterApp = () => {
         />
         <section className="content">
           <KpiCards vm={presentation.vm} extractionRate={inputs.extractionRate} />
-          <PassiveIncomeSection data={presentation} dataColors={dataColors} />
+          <PassiveIncomeSection
+            data={presentation}
+            dataColors={dataColors}
+            isaAnnualContribution={inputs.isaAnnualContribution}
+          />
           <AssetsSection data={presentation} dataColors={dataColors} />
           <SavingsSection
             data={presentation}

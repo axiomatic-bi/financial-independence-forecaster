@@ -5,6 +5,7 @@
   --surface-hover: #1a2740;
   --surface-subtle: #20304e;
   --primary: #5768ff;
+  --accent: var(--primary);
   --primary-light: #8e75ff;
   --accent-purple: #8e75ff;
   --accent-strong: #8e75ff;
@@ -12,6 +13,12 @@
   --text-secondary: #c0ccec;
   --border: #32466d;
   --bleed-band-blue: color-mix(in srgb, var(--bg) 70%, #214887 30%);
+  --bleed-accent-bg:
+    linear-gradient(
+      180deg,
+      color-mix(in srgb, var(--bg) 72%, var(--accent) 28%) 0%,
+      color-mix(in srgb, var(--bg) 78%, var(--accent-purple) 22%) 100%
+    );
   --surface-on-bleed: color-mix(in srgb, var(--surface) 76%, var(--accent-purple) 24%);
   --space-1: 12px;
   --space-2: 16px;
