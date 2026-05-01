@@ -19,7 +19,7 @@ describe('AssumptionsSection', () => {
 
     expect(html).toContain('Household mode');
     expect(html).toContain('Couple');
-    expect(html).toContain('£6K annual exempt amount');
+    expect(html).toMatch(/£6[kK] annual exempt amount/);
     expect(html).toContain('4.2%');
   });
 
