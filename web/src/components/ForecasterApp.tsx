@@ -516,7 +516,7 @@ export const ForecasterApp = () => {
         </aside>
 
         <section className="content">
-          <div className="kpis">
+          <section className="kpis">
             <div className="kpis-inner">
               {vm.kpis.map((card) => (
                 <article key={card.label} className="card">
@@ -535,229 +535,213 @@ export const ForecasterApp = () => {
                 </article>
               ))}
             </div>
-          </div>
+          </section>
 
-          <div className="charts-flow">
-            <section className="narrative-chart">
-              <h3 className="narrative-chart-title">Asset Breakdown Over Time</h3>
-              <div className="narrative-copy">
-                <p>{chartDescriptions.assetBreakdown}</p>
-                <ul className="chart-takeaways">
-                  <li>
-                    <strong>Projected total assets ({latestAssetSnapshot.year}):</strong> {formatCompactCurrency(latestAssetTotal)}
-                  </li>
-                  <li>
-                    <strong>Largest component at end of forecast:</strong> {leadingAsset.label} ({formatCompactCurrency(leadingAsset.value)})
-                  </li>
-                  <li>
-                    <strong>Growth from first to final year:</strong>{' '}
-                    {assetGrowthMultiple ? `${assetGrowthMultiple.toFixed(1)}x` : 'N/A (starting assets are £0)'}
-                  </li>
-                </ul>
-              </div>
-              <article className="plot-card">
-                <div className="chart-wrap">
-                  <ResponsiveContainer width="100%" height={360}>
-                    <AreaChart data={assetChartData} margin={{ top: 16, right: 8, left: 12, bottom: 8 }}>
-                      <CartesianGrid stroke="#32466d" strokeDasharray="3 3" />
-                      <XAxis dataKey="year" stroke="#c0ccec" />
-                      <YAxis stroke="#c0ccec" tickFormatter={formatCurrencyTick} />
-                      <Tooltip content={renderAssetTooltip} />
-                      <Legend />
-                      <Area type="monotone" dataKey="isa" stackId="1" stroke={dataColors.isa} fill={dataColors.isa} name="ISA Assets" />
-                      <Area
-                        type="monotone"
-                        dataKey="nonIsa"
-                        stackId="1"
-                        stroke={dataColors.nonIsa}
-                        fill={dataColors.nonIsa}
-                        name="Non-ISA Assets"
-                      />
-                      <Area
-                        type="monotone"
-                        dataKey="pension"
-                        stackId="1"
-                        stroke={dataColors.pension}
-                        fill={dataColors.pension}
-                        name="Pension"
-                      />
-                      <Area
-                        type="monotone"
-                        dataKey="homeEquity"
-                        stackId="1"
-                        stroke={dataColors.homeEquity}
-                        fill={dataColors.homeEquity}
-                        name="Home Equity"
-                      />
-                    </AreaChart>
-                  </ResponsiveContainer>
-                </div>
-              </article>
-            </section>
-
-            <section className="narrative-chart">
-              <h3 className="narrative-chart-title">Potential Passive Income vs Projected Expenses</h3>
-              <div className="narrative-copy">
-                <p>{chartDescriptions.passiveIncome}</p>
-                <ul className="chart-takeaways">
-                  <li>
-                    <strong>Expected FI crossover year:</strong> {crossoverYear}
-                  </li>
-                  <li>
-                    <strong>Coverage ratio in {latestIncomeSnapshot.year}:</strong> {latestCoverageRatio.toFixed(2)}x
-                  </li>
-                  <li>
-                    <strong>Withdrawal minus expenses in {latestIncomeSnapshot.year}:</strong> {formatCompactCurrency(latestCoverageGap)}
-                  </li>
-                </ul>
-              </div>
-              <article className="plot-card">
-                <div className="chart-wrap">
-                  <ResponsiveContainer width="100%" height={360}>
-                    <LineChart data={withdrawalChartData} margin={{ top: 16, right: 8, left: 12, bottom: 8 }}>
-                      <CartesianGrid stroke="#32466d" strokeDasharray="3 3" />
-                      <XAxis dataKey="year" stroke="#c0ccec" />
-                      <YAxis stroke="#c0ccec" tickFormatter={formatCurrencyTick} />
-                      <Tooltip
-                        formatter={(value) => formatCompactCurrency(Number(value ?? 0))}
-                        contentStyle={{ backgroundColor: '#0d162a', border: '1px solid #32466d', borderRadius: 10 }}
-                        itemStyle={{ color: '#f0f4ff' }}
-                        labelStyle={{ color: '#c0ccec' }}
-                      />
-                      <Legend />
-                      <Line
-                        type="monotone"
-                        dataKey="withdrawal"
-                        stroke={dataColors.withdrawal}
-                        strokeWidth={2}
-                        dot={false}
-                        activeDot={false}
-                        name={vm.withdrawalSeries[0]?.name ?? 'Annual Withdrawal'}
-                      />
-                      <Line
-                        type="monotone"
-                        dataKey="expenses"
-                        stroke={dataColors.expenses}
-                        strokeWidth={2}
-                        strokeDasharray="6 4"
-                        dot={false}
-                        activeDot={false}
-                        name="Annual Expenses (Inflation-Adjusted)"
-                      />
-                    </LineChart>
-                  </ResponsiveContainer>
-                </div>
-              </article>
-            </section>
-          </div>
-
-          <div className="tables">
-            <article className="table-card">
-              <h3>Financial Metrics</h3>
-              <div className="table-shell">
-                <table>
-                  <thead>
-                    <tr>
-                      <th>Metric</th>
-                      {metricColumns.map((c) => (
-                        <th key={c}>{c}</th>
-                      ))}
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {vm.financeRows.map((row) => (
-                      <tr key={row.label} className={row.label === 'Monthly Savings' ? 'highlight-row' : ''}>
-                        <td>{row.label}</td>
-                        {row.values.map((value, valueIndex) => (
-                          <td key={`${row.label}-${valueIndex}`}>{value}</td>
-                        ))}
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
+          <section className="narrative-chart">
+            <h3 className="narrative-chart-title">Asset Breakdown Over Time</h3>
+            <div className="narrative-copy">
+              <p>{chartDescriptions.assetBreakdown}</p>
+              <ul className="chart-takeaways">
+                <li>
+                  <strong>Projected total assets ({latestAssetSnapshot.year}):</strong> {formatCompactCurrency(latestAssetTotal)}
+                </li>
+                <li>
+                  <strong>Largest component at end of forecast:</strong> {leadingAsset.label} ({formatCompactCurrency(leadingAsset.value)})
+                </li>
+                <li>
+                  <strong>Growth from first to final year:</strong>{' '}
+                  {assetGrowthMultiple ? `${assetGrowthMultiple.toFixed(1)}x` : 'N/A (starting assets are £0)'}
+                </li>
+              </ul>
+            </div>
+            <article className="plot-card">
+              <div className="chart-wrap">
+                <ResponsiveContainer width="100%" height={360}>
+                  <AreaChart data={assetChartData} margin={{ top: 16, right: 8, left: 12, bottom: 8 }}>
+                    <CartesianGrid stroke="#32466d" strokeDasharray="3 3" />
+                    <XAxis dataKey="year" stroke="#c0ccec" />
+                    <YAxis stroke="#c0ccec" tickFormatter={formatCurrencyTick} />
+                    <Tooltip content={renderAssetTooltip} />
+                    <Legend />
+                    <Area type="monotone" dataKey="isa" stackId="1" stroke={dataColors.isa} fill={dataColors.isa} name="ISA Assets" />
+                    <Area
+                      type="monotone"
+                      dataKey="nonIsa"
+                      stackId="1"
+                      stroke={dataColors.nonIsa}
+                      fill={dataColors.nonIsa}
+                      name="Non-ISA Assets"
+                    />
+                    <Area
+                      type="monotone"
+                      dataKey="pension"
+                      stackId="1"
+                      stroke={dataColors.pension}
+                      fill={dataColors.pension}
+                      name="Pension"
+                    />
+                    <Area
+                      type="monotone"
+                      dataKey="homeEquity"
+                      stackId="1"
+                      stroke={dataColors.homeEquity}
+                      fill={dataColors.homeEquity}
+                      name="Home Equity"
+                    />
+                  </AreaChart>
+                </ResponsiveContainer>
               </div>
             </article>
 
-            <article className="table-card">
-              <h3>Assets and Net Worth</h3>
-              <div className="table-shell">
-                <table>
-                  <thead>
-                    <tr>
-                      <th>Metric</th>
-                      {metricColumns.map((c) => (
-                        <th key={c}>{c}</th>
-                      ))}
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {vm.netWorthRows.map((row) => (
-                      <tr key={row.label} className={row.isTotal ? 'total' : ''}>
-                        <td>{row.label}</td>
-                        {row.values.map((value, valueIndex) => (
-                          <td key={`${row.label}-${valueIndex}`}>{value}</td>
-                        ))}
-                      </tr>
+            <table className="section-table">
+              <thead>
+                <tr>
+                  <th>Metric</th>
+                  {metricColumns.map((c) => (
+                    <th key={c}>{c}</th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {vm.netWorthRows.map((row) => (
+                  <tr key={row.label} className={row.isTotal ? 'total' : ''}>
+                    <td>{row.label}</td>
+                    {row.values.map((value, valueIndex) => (
+                      <td key={`${row.label}-${valueIndex}`}>{value}</td>
                     ))}
-                  </tbody>
-                </table>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </section>
+
+          <section className="narrative-chart">
+            <h3 className="narrative-chart-title">Potential Passive Income vs Projected Expenses</h3>
+            <div className="narrative-copy">
+              <p>{chartDescriptions.passiveIncome}</p>
+              <ul className="chart-takeaways">
+                <li>
+                  <strong>Expected FI crossover year:</strong> {crossoverYear}
+                </li>
+                <li>
+                  <strong>Coverage ratio in {latestIncomeSnapshot.year}:</strong> {latestCoverageRatio.toFixed(2)}x
+                </li>
+                <li>
+                  <strong>Withdrawal minus expenses in {latestIncomeSnapshot.year}:</strong> {formatCompactCurrency(latestCoverageGap)}
+                </li>
+              </ul>
+            </div>
+            <article className="plot-card">
+              <div className="chart-wrap">
+                <ResponsiveContainer width="100%" height={360}>
+                  <LineChart data={withdrawalChartData} margin={{ top: 16, right: 8, left: 12, bottom: 8 }}>
+                    <CartesianGrid stroke="#32466d" strokeDasharray="3 3" />
+                    <XAxis dataKey="year" stroke="#c0ccec" />
+                    <YAxis stroke="#c0ccec" tickFormatter={formatCurrencyTick} />
+                    <Tooltip
+                      formatter={(value) => formatCompactCurrency(Number(value ?? 0))}
+                      contentStyle={{ backgroundColor: '#0d162a', border: '1px solid #32466d', borderRadius: 10 }}
+                      itemStyle={{ color: '#f0f4ff' }}
+                      labelStyle={{ color: '#c0ccec' }}
+                    />
+                    <Legend />
+                    <Line
+                      type="monotone"
+                      dataKey="withdrawal"
+                      stroke={dataColors.withdrawal}
+                      strokeWidth={2}
+                      dot={false}
+                      activeDot={false}
+                      name={vm.withdrawalSeries[0]?.name ?? 'Annual Withdrawal'}
+                    />
+                    <Line
+                      type="monotone"
+                      dataKey="expenses"
+                      stroke={dataColors.expenses}
+                      strokeWidth={2}
+                      strokeDasharray="6 4"
+                      dot={false}
+                      activeDot={false}
+                      name="Annual Expenses (Inflation-Adjusted)"
+                    />
+                  </LineChart>
+                </ResponsiveContainer>
               </div>
             </article>
 
-            <article className="table-card">
-              <h3>FI Health</h3>
-              <div className="table-shell">
-                <table>
-                  <thead>
-                    <tr>
-                      <th>Metric</th>
-                      {metricColumns.map((c) => (
-                        <th key={c}>{c}</th>
-                      ))}
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {vm.fiHealthRows.map((row) => (
-                      <tr key={row.label}>
-                        <td>
-                          {row.label === 'Liquid Runway (Years)' ? (
-                            <span className="label-with-info">
-                              <span>{row.label}</span>
-                              <span className="tooltip-wrap">
-                                <button type="button" className="info-icon" aria-label="About Liquid Runway">
-                                  i
-                                </button>
-                                <span className="tooltip-content tooltip-content--right" role="tooltip">
-                                  Static runway based on current liquid assets and current annual spend; assumes no investment growth.
-                                </span>
-                              </span>
+            <table className="section-table">
+              <thead>
+                <tr>
+                  <th>Metric</th>
+                  {metricColumns.map((c) => (
+                    <th key={c}>{c}</th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {vm.fiHealthRows.map((row) => (
+                  <tr key={row.label}>
+                    <td>
+                      {row.label === 'Liquid Runway (Years)' ? (
+                        <span className="label-with-info">
+                          <span>{row.label}</span>
+                          <span className="tooltip-wrap">
+                            <button type="button" className="info-icon" aria-label="About Liquid Runway">
+                              i
+                            </button>
+                            <span className="tooltip-content tooltip-content--right" role="tooltip">
+                              Static runway based on current liquid assets and current annual spend; assumes no investment growth.
                             </span>
-                          ) : row.label === 'FI Coverage Ratio' ? (
-                            <span className="label-with-info">
-                              <span>{row.label}</span>
-                              <span className="tooltip-wrap">
-                                <button type="button" className="info-icon" aria-label="About FI Coverage Ratio">
-                                  i
-                                </button>
-                                <span className="tooltip-content tooltip-content--right" role="tooltip">
-                                  Ratio of annual FI withdrawals to annual spend (including mortgage): values above 1.00x indicate coverage.
-                                </span>
-                              </span>
+                          </span>
+                        </span>
+                      ) : row.label === 'FI Coverage Ratio' ? (
+                        <span className="label-with-info">
+                          <span>{row.label}</span>
+                          <span className="tooltip-wrap">
+                            <button type="button" className="info-icon" aria-label="About FI Coverage Ratio">
+                              i
+                            </button>
+                            <span className="tooltip-content tooltip-content--right" role="tooltip">
+                              Ratio of annual FI withdrawals to annual spend (including mortgage): values above 1.00x indicate coverage.
                             </span>
-                          ) : (
-                            row.label
-                          )}
-                        </td>
-                        {row.values.map((value, valueIndex) => (
-                          <td key={`${row.label}-${valueIndex}`}>{value}</td>
-                        ))}
-                      </tr>
+                          </span>
+                        </span>
+                      ) : (
+                        row.label
+                      )}
+                    </td>
+                    {row.values.map((value, valueIndex) => (
+                      <td key={`${row.label}-${valueIndex}`}>{value}</td>
                     ))}
-                  </tbody>
-                </table>
-              </div>
-            </article>
-          </div>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </section>
+
+          <section className="table-section">
+            <table>
+              <thead>
+                <tr>
+                  <th>Metric</th>
+                  {metricColumns.map((c) => (
+                    <th key={c}>{c}</th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {vm.financeRows.map((row) => (
+                  <tr key={row.label} className={row.label === 'Monthly Savings' ? 'highlight-row' : ''}>
+                    <td>{row.label}</td>
+                    {row.values.map((value, valueIndex) => (
+                      <td key={`${row.label}-${valueIndex}`}>{value}</td>
+                    ))}
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </section>
+
         </section>
       </div>
     </div>
