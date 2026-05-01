@@ -53,6 +53,26 @@
     overflow: visible;
     min-height: auto;
   }
+
+  .narrative-chart,
+  .passive-income-inner,
+  .savings-inner {
+    min-width: 0;
+  }
+
+  table.section-table {
+    display: block;
+    width: 100%;
+    max-width: 100%;
+    overflow-x: auto;
+    overflow-y: hidden;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  table.section-table th,
+  table.section-table td {
+    white-space: nowrap;
+  }
 }
 
 @media (max-width: 1200px) {
