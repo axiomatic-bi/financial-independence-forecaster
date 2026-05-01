@@ -71,7 +71,9 @@
 
   table.section-table th,
   table.section-table td {
-    white-space: nowrap;
+    white-space: normal;
+    overflow-wrap: anywhere;
+    word-break: break-word;
   }
 }
 
@@ -87,8 +89,9 @@
   }
 
   th, td {
-    padding: 6px;
-    font-size: 0.73rem;
+    padding: 5px;
+    font-size: 0.71rem;
+    line-height: 1.25;
   }
 
   .kpi-value {
