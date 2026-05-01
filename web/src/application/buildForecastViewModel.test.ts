@@ -20,6 +20,7 @@ const scenarios = (fixtureData as { scenarios: ScenarioFixture[] }).scenarios;
 const mapFixtureInputs = (inputs: Record<string, number | string>) => ({
   income: Number(inputs.income),
   expenses: Number(inputs.expenses),
+  pensionableMonthlyPay: Number(inputs.pensionable_monthly_pay ?? inputs.income),
   isaAssets: Number(inputs.isa_assets),
   isaRate: Number(inputs.isa_rate),
   nonIsaAssets: Number(inputs.non_isa_assets),
@@ -37,6 +38,7 @@ const mapFixtureInputs = (inputs: Record<string, number | string>) => ({
   employerPensionContributionRate: Number(inputs.employer_pension_contribution_rate),
   pensionInterestRate: Number(inputs.pension_interest_rate),
   pensionTaxReliefRate: Number(inputs.pension_tax_relief_rate),
+  sippContribution: Number(inputs.sipp_contribution ?? 0),
   inflationRate: Number(inputs.inflation_rate),
   wageIncreaseRate: Number(inputs.wage_increase_rate),
   extractionRate: 3.9,
@@ -80,7 +82,20 @@ describe('buildForecastViewModel parity', () => {
     expect(savingsRateKpi?.value).toMatch(/%$/);
     expect(savingsRateKpi?.value).not.toContain('NaN');
     expect(vm.financeRows[0].values.length).toBe(6);
-    expect(vm.netWorthRows[vm.netWorthRows.length - 1].isTotal).toBe(true);
+    const monthlySurplusIsaRow = vm.financeRows.find((row) => row.label === 'Monthly Surplus (ISA)');
+    const monthlySurplusNonIsaRow = vm.financeRows.find((row) => row.label === 'Monthly Surplus (Non-ISA)');
+    expect(monthlySurplusIsaRow?.values.length).toBe(6);
+    expect(monthlySurplusNonIsaRow?.values.length).toBe(6);
+    expect(vm.fiHealthRows.length).toBe(2);
+    expect(vm.fiHealthRows[0]?.label).toBe('Liquid Runway (Years)');
+    expect(vm.fiHealthRows[1]?.label).toBe('FI Coverage Ratio');
+    expect(vm.fiHealthRows[0]?.values.length).toBe(6);
+    expect(vm.fiHealthRows[1]?.values.length).toBe(6);
+    const totalRowIndex = vm.netWorthRows.findIndex((row) => row.label === 'Total Net Worth');
+    expect(totalRowIndex).toBeGreaterThanOrEqual(0);
+    expect(vm.netWorthRows[totalRowIndex].isTotal).toBe(true);
+    expect(vm.netWorthRows[totalRowIndex + 1]?.label).toBe("Real Net Worth (Today's £)");
+    expect(vm.netWorthRows[totalRowIndex + 1]?.values.length).toBe(6);
   });
 
   it('normalizes fallback defaults when falsy values supplied', () => {

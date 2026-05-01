@@ -3,9 +3,11 @@ export type PensionType = 'percentage' | 'fixed';
 export interface ForecastInputs {
   income: number;
   expenses: number;
+  pensionableMonthlyPay: number;
   isaAssets: number;
   isaRate: number;
   nonIsaAssets: number;
+  nonIsaCostBasis?: number;
   nonIsaRate: number;
   forecastYears: number;
   homeValue: number;
@@ -20,6 +22,7 @@ export interface ForecastInputs {
   employerPensionContributionRate: number;
   pensionInterestRate: number;
   pensionTaxReliefRate: number;
+  sippContribution: number;
   inflationRate: number;
   wageIncreaseRate: number;
   extractionRate: number;
@@ -46,19 +49,29 @@ export interface ForecastResult {
   months: number;
   withdrawal_39_annual: number;
   final_isa: number;
+  final_non_isa: number;
+  final_non_isa_cost_basis: number;
+  non_isa_cost_basis_values: number[];
   years_until_expenses_covered: number | null;
   final_monthly_expenses: number;
   final_annual_expenses: number;
   expense_values: number[];
   income_values: number[];
+  active_income_pre_tax_values: number[];
   mortgage_balance_values: number[];
   mortgage_payment_values: number[];
   home_equity_values: number[];
+  workplace_pension_contribution_values: number[];
+  sipp_contribution_values: number[];
+  isa_capital_gain_values: number[];
+  non_isa_gain_values: number[];
   home_value: number;
   final_mortgage_balance: number;
   final_home_equity: number;
   monthly_mortgage_payment: number;
   mortgage_interest_rate: number;
+  pensionable_monthly_pay: number;
+  sipp_contribution: number;
   fi_date: string | null;
   fi_month_index: number | null;
   fi_evaluation_end_month: number;
@@ -83,5 +96,6 @@ export interface ForecastViewModel {
   withdrawalSeries: { name: string; values: number[] }[];
   financeRows: TableRow[];
   netWorthRows: TableRow[];
+  fiHealthRows: TableRow[];
   raw: ForecastResult;
 }

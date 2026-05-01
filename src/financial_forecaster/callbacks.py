@@ -6,7 +6,7 @@ from financial_forecaster.components.charts import (
     build_summary_stats,
     build_withdrawal_chart,
 )
-from financial_forecaster.forecast import calculate_forecast
+from financial_forecaster.forecast import calculate_forecast, calculate_non_isa_net_withdrawal
 
 
 def register_callbacks(app):
@@ -53,10 +53,12 @@ def register_callbacks(app):
             Input("isa-annual-contribution", "value"),
             Input("pension-type", "value"),
             Input("pension-assets", "value"),
+            Input("pensionable-monthly-pay", "value"),
             Input("pension-contribution", "value"),
             Input("employer-pension-contribution-rate", "value"),
             Input("pension-interest-rate", "value"),
             Input("pension-tax-relief-rate", "value"),
+            Input("sipp-contribution", "value"),
             Input("inflation-rate", "value"),
             Input("wage-increase-rate", "value"),
         ],
@@ -77,10 +79,12 @@ def register_callbacks(app):
         isa_annual_contribution,
         pension_type,
         pension_assets,
+        pensionable_monthly_pay,
         pension_contribution,
         employer_pension_contribution_rate,
         pension_interest_rate,
         pension_tax_relief_rate,
+        sipp_contribution,
         inflation_rate,
         wage_increase_rate,
     ):
@@ -100,12 +104,16 @@ def register_callbacks(app):
             mortgage_interest_rate=mortgage_interest_rate or 3.83,
             home_appreciation_rate=home_appreciation_rate or 3.0,
             pension_assets=pension_assets,
+            pensionable_monthly_pay=pensionable_monthly_pay or income,
             pension_contribution=pension_contribution,
             employer_pension_contribution_rate=employer_pension_contribution_rate,
             pension_type=pension_type,
             pension_rate=pension_contribution if pension_type == "percentage" else 5.0,
             pension_interest_rate=pension_interest_rate or 5.0,
             pension_tax_relief_rate=pension_tax_relief_rate or 0,
+            sipp_contribution=sipp_contribution or 0,
+            sipp_type="fixed",
+            sipp_rate=0,
             inflation_rate=inflation_rate or 2.0,
             wage_increase_rate=wage_increase_rate or 3.0,
             isa_annual_contribution=isa_annual_contribution or 40000,
@@ -139,12 +147,11 @@ def register_callbacks(app):
         fi_non_isa = forecast_data["non_isa_values"][fi_month_index]
         fi_income = forecast_data["income_values"][fi_month_index]
         fi_savings = forecast_data["monthly_savings_values"][fi_month_index]
-        fi_non_isa_tax_free = min(fi_non_isa, 3000)
-        fi_non_isa_taxed = max(0, fi_non_isa - 3000)
-        fi_withdrawal_39_annual = (
-            (fi_isa * 0.039)
-            + (fi_non_isa_tax_free * 0.039)
-            + (fi_non_isa_taxed * 0.039 * 0.76)
+        fi_non_isa_cost_basis = forecast_data["non_isa_cost_basis_values"][fi_month_index]
+        fi_withdrawal_39_annual = (fi_isa * 0.039) + calculate_non_isa_net_withdrawal(
+            fi_non_isa,
+            fi_non_isa_cost_basis,
+            extraction_rate_percent=3.9,
         )
         fi_savings_rate = (fi_savings / fi_income * 100) if fi_income > 0 else 0
 

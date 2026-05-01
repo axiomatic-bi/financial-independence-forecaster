@@ -1,0 +1,185 @@
+@media (max-width: 960px) {
+  :root {
+    --mobile-gutter: 14px;
+  }
+
+  .panel-toggle {
+    display: inline-flex;
+    position: sticky;
+    top: 0;
+    z-index: 60;
+    padding-left: var(--mobile-gutter);
+    padding-right: var(--mobile-gutter);
+  }
+
+  .app {
+    height: auto;
+    min-height: 100vh;
+    overflow: visible;
+  }
+
+  .main {
+    flex-direction: column;
+    overflow: visible;
+  }
+
+  .panel {
+    width: 100%;
+    max-height: none;
+    overflow: visible;
+    border-right: 0;
+    border-bottom: 1px solid var(--border);
+    padding-left: var(--mobile-gutter);
+    padding-right: var(--mobile-gutter);
+  }
+
+  .panel:not(.is-open) {
+    display: none;
+  }
+
+  .panel.is-open {
+    position: fixed;
+    inset: 0;
+    width: 100vw;
+    height: 100dvh;
+    z-index: 50;
+    overflow-y: auto;
+    overflow-x: hidden;
+    border-bottom: 0;
+    background: var(--bg);
+    padding-top: calc(var(--space-4) + 40px);
+    padding-left: var(--mobile-gutter);
+    padding-right: var(--mobile-gutter);
+  }
+
+  .hero {
+    padding-left: var(--mobile-gutter);
+    padding-right: var(--mobile-gutter);
+  }
+
+  .content > .hero {
+    margin-left: calc(-1 * var(--mobile-gutter));
+    margin-right: calc(-1 * var(--mobile-gutter));
+  }
+
+  .kpis {
+    margin-left: calc(-1 * var(--mobile-gutter));
+    margin-right: calc(-1 * var(--mobile-gutter));
+  }
+
+  .passive-income-section,
+  .savings-section {
+    margin-left: calc(-1 * var(--mobile-gutter));
+    margin-right: calc(-1 * var(--mobile-gutter));
+  }
+
+  .kpis-inner,
+  .passive-income-inner,
+  .savings-inner {
+    width: calc(100% - (2 * var(--mobile-gutter)));
+  }
+
+  .kpis-inner { padding: 0; }
+
+  .content {
+    overflow: visible;
+    min-height: auto;
+    padding-left: var(--mobile-gutter);
+    padding-right: var(--mobile-gutter);
+    padding-bottom: var(--space-4);
+  }
+
+  .narrative-chart,
+  .passive-income-inner,
+  .savings-inner {
+    min-width: 0;
+  }
+
+  table.section-table {
+    display: table;
+    width: 100%;
+    table-layout: fixed;
+    max-width: 100%;
+    overflow-x: visible;
+    overflow-y: visible;
+  }
+
+  table.section-table th,
+  table.section-table td {
+    white-space: normal;
+    overflow-wrap: anywhere;
+    word-break: break-word;
+  }
+
+  /* Mobile table columns: Metric + Current + 10Y + FI */
+  table.section-table th:nth-child(3),
+  table.section-table td:nth-child(3),
+  table.section-table th:nth-child(4),
+  table.section-table td:nth-child(4),
+  table.section-table th:nth-child(6),
+  table.section-table td:nth-child(6) {
+    display: none;
+  }
+
+  /* Prevent passive-income tooltip popouts from creating horizontal overflow */
+  table.section-table .tooltip-content--right {
+    left: 50%;
+    right: auto;
+    top: calc(100% + 8px);
+    transform: translateX(-50%);
+    width: min(220px, 80vw);
+  }
+
+  table.section-table--passive {
+    overflow-x: visible;
+    overflow-y: visible;
+  }
+
+  table.section-table--passive .tooltip-wrap {
+    position: relative;
+    z-index: 1;
+  }
+
+  table.section-table--passive .tooltip-wrap:hover,
+  table.section-table--passive .tooltip-wrap:focus-within {
+    z-index: 200;
+  }
+
+  table.section-table--passive .info-icon {
+    position: relative;
+    z-index: 1;
+  }
+
+  table.section-table--passive .tooltip-content,
+  table.section-table--passive .tooltip-content--right {
+    z-index: 201;
+    left: 0;
+    right: auto;
+    top: calc(100% + 8px);
+    transform: none;
+    width: min(280px, calc(100vw - 28px));
+    max-width: calc(100vw - 28px);
+  }
+}
+
+@media (max-width: 1200px) {
+  .kpis-inner { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+
+@media (max-width: 760px) {
+  .kpis-inner { grid-template-columns: 1fr; }
+
+  .narrative-chart {
+    grid-template-columns: 1fr;
+  }
+
+  th, td {
+    padding: 5px;
+    font-size: 0.71rem;
+    line-height: 1.25;
+  }
+
+  .kpi-value {
+    font-size: 1.9rem;
+  }
+}

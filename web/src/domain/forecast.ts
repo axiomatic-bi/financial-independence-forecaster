@@ -2,11 +2,42 @@ import type { ForecastResult, PensionType } from '../types/forecast';
 
 const FI_EVALUATION_MONTHS = 40 * 12;
 const DEFAULT_EXTRACTION_RATE = 3.9;
+const UK_CGT_ANNUAL_EXEMPT_AMOUNT = 3000;
+const UK_CGT_BASIC_RATE = 0.18;
 
 const orZero = (value: number | null | undefined): number => value ?? 0;
-const calculateAnnualWithdrawal = (isa: number, nonIsa: number, extractionRatePercent: number): number => {
-  const extractionRate = extractionRatePercent / 100;
-  return isa * extractionRate + Math.min(nonIsa, 3000) * extractionRate + Math.max(0, nonIsa - 3000) * extractionRate * 0.76;
+
+const calculateSippReliefAtSource = (netContribution: number, selectedReliefRate: number): { gross: number; extraCashRelief: number } => {
+  if (netContribution <= 0) {
+    return { gross: 0, extraCashRelief: 0 };
+  }
+  if (selectedReliefRate <= 0) {
+    return { gross: netContribution, extraCashRelief: 0 };
+  }
+  const gross = netContribution / 0.8;
+  const additionalReliefRate = Math.max(0, selectedReliefRate - 20);
+  const extraCashRelief = netContribution * (additionalReliefRate / 100);
+  return { gross, extraCashRelief };
+};
+
+const calculateNonIsaNetWithdrawal = (
+  nonIsaValue: number,
+  nonIsaCostBasis: number,
+  extractionRatePercent: number,
+  cgtAnnualExemptAmount: number = UK_CGT_ANNUAL_EXEMPT_AMOUNT,
+  cgtRate: number = UK_CGT_BASIC_RATE,
+): number => {
+  if (nonIsaValue <= 0 || extractionRatePercent <= 0) {
+    return 0;
+  }
+
+  const grossWithdrawal = nonIsaValue * (extractionRatePercent / 100);
+  const unrealizedGain = Math.max(0, nonIsaValue - Math.max(0, nonIsaCostBasis));
+  const gainRatio = nonIsaValue > 0 ? unrealizedGain / nonIsaValue : 0;
+  const gainsRealized = grossWithdrawal * gainRatio;
+  const taxableGains = Math.max(0, gainsRealized - cgtAnnualExemptAmount);
+  const cgtDue = taxableGains * cgtRate;
+  return Math.max(0, grossWithdrawal - cgtDue);
 };
 
 const addMonths = (baseDate: Date, months: number): Date => {
@@ -23,14 +54,14 @@ const toIsoMonth = (date: Date): string => {
 };
 
 export const calculateMonthlyPension = (
-  income: number,
+  baseIncome: number,
   pensionType: PensionType,
   pensionContribution: number,
   pensionRate: number,
 ): number => {
   if (pensionType === 'percentage') {
     const pensionAmount = pensionContribution || pensionRate;
-    return income * (pensionAmount / 100);
+    return baseIncome * (pensionAmount / 100);
   }
   return pensionContribution;
 };
@@ -40,7 +71,7 @@ export const calculateMortgagePayment = (
   annualRate: number,
   yearsRemaining: number,
 ): number => {
-  if (balance <= 0 || yearsRemaining <= 0 || annualRate <= 0) {
+  if (balance <= 0 || yearsRemaining <= 0 || annualRate < 0) {
     return 0;
   }
 
@@ -61,7 +92,9 @@ interface SimulateMonthArgs {
   currentNonIsa: number;
   currentPension: number;
   currentIncome: number;
+  currentPensionableIncome: number;
   currentExpenses: number;
+  currentNonIsaCostBasis: number;
   isaRate: number;
   nonIsaRate: number;
   pensionInterestRate: number;
@@ -73,7 +106,11 @@ interface SimulateMonthArgs {
   pensionContribution: number;
   employerPensionContributionRate: number;
   pensionRate: number;
+  sippType: PensionType;
+  sippContribution: number;
+  sippRate: number;
   pensionTaxReliefRate: number;
+  currentMortgagePayment: number;
 }
 
 interface MonthResult {
@@ -81,9 +118,19 @@ interface MonthResult {
   non_isa: number;
   pension: number;
   income: number;
+  pensionable_income: number;
   expenses: number;
+  non_isa_cost_basis: number;
   savings: number;
   isa_annual_used: number;
+  monthly_personal_pension: number;
+  monthly_workplace_pension: number;
+  monthly_sipp_net: number;
+  active_income_pre_tax: number;
+  isa_contribution: number;
+  non_isa_contribution: number;
+  isa_capital_gain: number;
+  non_isa_gain: number;
 }
 
 const simulateMonth = (args: SimulateMonthArgs): MonthResult => {
@@ -94,7 +141,9 @@ const simulateMonth = (args: SimulateMonthArgs): MonthResult => {
     currentNonIsa,
     currentPension,
     currentIncome,
+    currentPensionableIncome,
     currentExpenses,
+    currentNonIsaCostBasis,
     isaRate,
     nonIsaRate,
     pensionInterestRate,
@@ -106,42 +155,58 @@ const simulateMonth = (args: SimulateMonthArgs): MonthResult => {
     pensionContribution,
     employerPensionContributionRate,
     pensionRate,
+    sippType,
+    sippContribution,
+    sippRate,
     pensionTaxReliefRate,
+    currentMortgagePayment,
   } = args;
 
   if (month > 0 && date.getUTCMonth() + 1 === 1) {
     currentExpenses = currentExpenses * (1 + inflationRate / 100);
     currentIncome = currentIncome * (1 + wageIncreaseRate / 100);
+    currentPensionableIncome = currentPensionableIncome * (1 + wageIncreaseRate / 100);
   }
   if (month > 0 && date.getUTCMonth() + 1 === 4) {
     isaAnnualUsed = 0;
   }
 
-  let currentMonthlyPension = calculateMonthlyPension(
-    currentIncome,
+  const currentMonthlyWorkplacePension = calculateMonthlyPension(
+    currentPensionableIncome,
     pensionType,
     pensionContribution,
     pensionRate,
   );
-  const currentMonthlyEmployerPension = currentIncome * (employerPensionContributionRate / 100);
-  if (pensionTaxReliefRate && currentMonthlyPension > 0) {
-    currentMonthlyPension *= 1 + pensionTaxReliefRate / 100;
-  }
+  const currentMonthlySippNet = calculateMonthlyPension(currentPensionableIncome, sippType, sippContribution, sippRate);
+  const currentMonthlyEmployerPension = currentPensionableIncome * (employerPensionContributionRate / 100);
+  const sippRelief = calculateSippReliefAtSource(currentMonthlySippNet, pensionTaxReliefRate);
+  const currentMonthlySippGross = sippRelief.gross;
+  const currentMonthlyPersonalPension = currentMonthlyWorkplacePension + currentMonthlySippNet;
 
-  const currentMonthlySavings = currentIncome - currentExpenses - currentMonthlyPension;
+  // Net-pay model: take-home income already excludes workplace employee pension deductions.
+  const currentMonthlySavings = currentIncome - currentExpenses - currentMortgagePayment - currentMonthlySippNet + sippRelief.extraCashRelief;
+  let isaContribution = 0;
+  let nonIsaContribution = 0;
+  let isaCapitalGain = 0;
+  let nonIsaGain = 0;
   if (month > 0) {
-    currentIsa = currentIsa * (1 + isaRate / 12);
-    currentNonIsa = currentNonIsa * (1 + nonIsaRate / 12);
+    const isaBeforeGrowth = currentIsa;
+    const nonIsaBeforeGrowth = currentNonIsa;
+    isaCapitalGain = isaBeforeGrowth * (isaRate / 12);
+    nonIsaGain = nonIsaBeforeGrowth * (nonIsaRate / 12);
+    currentIsa = isaBeforeGrowth + isaCapitalGain;
+    currentNonIsa = nonIsaBeforeGrowth + nonIsaGain;
     currentPension = currentPension * (1 + pensionInterestRate / 12);
     if (currentMonthlySavings > 0) {
       const remainingIsaAllowance = annualIsaLimit - isaAnnualUsed;
-      const isaContribution = Math.min(currentMonthlySavings, remainingIsaAllowance);
-      const nonIsaContribution = Math.max(0, currentMonthlySavings - isaContribution);
+      isaContribution = Math.min(currentMonthlySavings, remainingIsaAllowance);
+      nonIsaContribution = Math.max(0, currentMonthlySavings - isaContribution);
       currentIsa += isaContribution;
       currentNonIsa += nonIsaContribution;
       isaAnnualUsed += isaContribution;
+      currentNonIsaCostBasis += nonIsaContribution;
     }
-    currentPension += currentMonthlyPension + currentMonthlyEmployerPension;
+    currentPension += currentMonthlyWorkplacePension + currentMonthlySippGross + currentMonthlyEmployerPension;
   }
 
   return {
@@ -149,9 +214,19 @@ const simulateMonth = (args: SimulateMonthArgs): MonthResult => {
     non_isa: currentNonIsa,
     pension: currentPension,
     income: currentIncome,
+    pensionable_income: currentPensionableIncome,
     expenses: currentExpenses,
+    non_isa_cost_basis: currentNonIsaCostBasis,
     savings: currentMonthlySavings,
     isa_annual_used: isaAnnualUsed,
+    monthly_personal_pension: currentMonthlyPersonalPension,
+    monthly_workplace_pension: currentMonthlyWorkplacePension,
+    monthly_sipp_net: currentMonthlySippNet,
+    active_income_pre_tax: currentIncome + currentMonthlyWorkplacePension,
+    isa_contribution: isaContribution,
+    non_isa_contribution: nonIsaContribution,
+    isa_capital_gain: isaCapitalGain,
+    non_isa_gain: nonIsaGain,
   };
 };
 
@@ -163,6 +238,7 @@ export const calculateForecast = (input: {
   nonIsaAssets: number;
   nonIsaRate: number;
   months: number;
+  nonIsaCostBasis?: number;
   homeValue?: number;
   mortgageBalance?: number;
   mortgageTerm?: number;
@@ -179,12 +255,17 @@ export const calculateForecast = (input: {
   wageIncreaseRate?: number;
   isaAnnualContribution?: number;
   extractionRate?: number;
+  pensionableMonthlyPay?: number;
+  sippType?: PensionType;
+  sippContribution?: number;
+  sippRate?: number;
 }): ForecastResult => {
   const income = orZero(input.income);
   const expenses = orZero(input.expenses);
   const isaAssets = orZero(input.isaAssets);
   const isaRate = orZero(input.isaRate) / 100;
   const nonIsaAssets = orZero(input.nonIsaAssets);
+  const nonIsaCostBasis = input.nonIsaCostBasis == null ? nonIsaAssets : Math.max(0, orZero(input.nonIsaCostBasis));
   const nonIsaRate = orZero(input.nonIsaRate) / 100;
   const months = input.months;
   let homeValue = orZero(input.homeValue);
@@ -203,6 +284,10 @@ export const calculateForecast = (input: {
   const wageIncreaseRate = orZero(input.wageIncreaseRate ?? 3);
   const isaAnnualContribution = orZero(input.isaAnnualContribution ?? 40000);
   const extractionRate = orZero(input.extractionRate ?? DEFAULT_EXTRACTION_RATE);
+  const pensionableMonthlyPay = input.pensionableMonthlyPay == null ? income : orZero(input.pensionableMonthlyPay);
+  const sippType = input.sippType ?? 'fixed';
+  const sippContribution = orZero(input.sippContribution);
+  const sippRate = orZero(input.sippRate);
 
   let mortgageMonthsRemaining = mortgageTerm ? Math.trunc(mortgageTerm * 12) : 0;
   const monthlyMortgagePayment = calculateMortgagePayment(
@@ -211,11 +296,16 @@ export const calculateForecast = (input: {
     mortgageTerm,
   );
 
-  let monthlyPension = calculateMonthlyPension(income, pensionType, pensionContribution, pensionRate);
-  if (pensionTaxReliefRate && monthlyPension > 0) {
-    monthlyPension *= 1 + pensionTaxReliefRate / 100;
-  }
-  const monthlySavings = income - expenses - monthlyPension;
+  const monthlyWorkplacePension = calculateMonthlyPension(
+    pensionableMonthlyPay,
+    pensionType,
+    pensionContribution,
+    pensionRate,
+  );
+  const monthlySippNet = calculateMonthlyPension(pensionableMonthlyPay, sippType, sippContribution, sippRate);
+  const monthlySippRelief = calculateSippReliefAtSource(monthlySippNet, pensionTaxReliefRate);
+  // Net-pay model: only SIPP is deducted from take-home cashflow.
+  const monthlySavings = income - expenses - monthlySippNet + monthlySippRelief.extraCashRelief;
 
   const dates: string[] = [];
   const totalWealth: number[] = [];
@@ -227,15 +317,24 @@ export const calculateForecast = (input: {
   const mortgageBalanceValues: number[] = [];
   const homeEquityValues: number[] = [];
   const incomeValues: number[] = [];
+  const activeIncomePreTaxValues: number[] = [];
   const mortgagePaymentValues: number[] = [];
+  const nonIsaCostBasisValues: number[] = [];
+  const workplacePensionContributionValues: number[] = [];
+  const sippContributionValues: number[] = [];
+  const isaCapitalGainValues: number[] = [];
+  const nonIsaGainValues: number[] = [];
 
   let currentIsa = isaAssets;
   let currentNonIsa = nonIsaAssets;
   let currentPension = pensionAssets;
   let currentIncome = income;
+  let currentPensionableIncome = pensionableMonthlyPay;
   let currentExpenses = expenses;
+  let currentNonIsaCostBasis = nonIsaCostBasis;
   let isaAnnualUsed = 0;
   let currentMortgageBalance = mortgageBalance;
+  const initialHomeEquity = Math.max(0, homeValue - mortgageBalance);
   let currentHomeEquity = Math.max(0, homeValue - currentMortgageBalance);
 
   let yearsUntilCovered: number | null = null;
@@ -249,6 +348,7 @@ export const calculateForecast = (input: {
     if (month <= months) {
       dates.push(toIsoMonth(date));
     }
+    const currentMortgagePaymentForMonth = mortgageMonthsRemaining > 0 ? monthlyMortgagePayment : 0;
     const monthResult = simulateMonth({
       month,
       date,
@@ -256,7 +356,9 @@ export const calculateForecast = (input: {
       currentNonIsa,
       currentPension,
       currentIncome,
+      currentPensionableIncome,
       currentExpenses,
+      currentNonIsaCostBasis,
       isaRate,
       nonIsaRate,
       pensionInterestRate,
@@ -268,13 +370,19 @@ export const calculateForecast = (input: {
       pensionContribution,
       employerPensionContributionRate,
       pensionRate,
+      sippType,
+      sippContribution,
+      sippRate,
       pensionTaxReliefRate,
+      currentMortgagePayment: currentMortgagePaymentForMonth,
     });
     currentIsa = monthResult.isa;
     currentNonIsa = monthResult.non_isa;
     currentPension = monthResult.pension;
     currentIncome = monthResult.income;
+    currentPensionableIncome = monthResult.pensionable_income;
     currentExpenses = monthResult.expenses;
+    currentNonIsaCostBasis = monthResult.non_isa_cost_basis;
     isaAnnualUsed = monthResult.isa_annual_used;
 
     if (month > 0 && date.getUTCMonth() + 1 === 1) {
@@ -289,23 +397,31 @@ export const calculateForecast = (input: {
     }
 
     currentHomeEquity = Math.max(0, homeValue - currentMortgageBalance);
-    const currentMortgagePayment = mortgageMonthsRemaining > 0 ? monthlyMortgagePayment : 0;
+    const currentMortgagePayment = currentMortgagePaymentForMonth;
     if (month <= months) {
       isaValues.push(currentIsa);
       nonIsaValues.push(currentNonIsa);
       pensionValues.push(currentPension);
       expenseValues.push(currentExpenses);
       incomeValues.push(currentIncome);
+      activeIncomePreTaxValues.push(monthResult.active_income_pre_tax);
       monthlySavingsValues.push(monthResult.savings);
       mortgageBalanceValues.push(currentMortgageBalance);
       homeEquityValues.push(currentHomeEquity);
       mortgagePaymentValues.push(currentMortgagePayment);
+      nonIsaCostBasisValues.push(currentNonIsaCostBasis);
+      workplacePensionContributionValues.push(monthResult.monthly_workplace_pension);
+      sippContributionValues.push(monthResult.monthly_sipp_net);
+      isaCapitalGainValues.push(monthResult.isa_capital_gain);
+      nonIsaGainValues.push(monthResult.non_isa_gain);
       totalWealth.push(currentIsa + currentNonIsa + currentPension + currentHomeEquity);
     }
 
     if (yearsUntilCovered === null) {
-      const annualWithdrawal = calculateAnnualWithdrawal(currentIsa, currentNonIsa, extractionRate);
-      const annualExpenses = currentExpenses * 12;
+      const annualWithdrawal =
+        currentIsa * (extractionRate / 100) +
+        calculateNonIsaNetWithdrawal(currentNonIsa, currentNonIsaCostBasis, extractionRate);
+      const annualExpenses = (currentExpenses + currentMortgagePayment) * 12;
       if (annualWithdrawal >= annualExpenses) {
         yearsUntilCovered = month / 12;
         fiDate = toIsoMonth(date);
@@ -316,10 +432,16 @@ export const calculateForecast = (input: {
 
   const finalWealth = totalWealth[totalWealth.length - 1];
   const finalPension = pensionValues[pensionValues.length - 1];
-  const totalGain = finalWealth - (isaAssets + nonIsaAssets);
+  const initialWealth = isaAssets + nonIsaAssets + pensionAssets + initialHomeEquity;
+  const totalGain = finalWealth - initialWealth;
   const finalIsa = isaValues.length ? isaValues[isaValues.length - 1] : 0;
   const finalNonIsa = nonIsaValues.length ? nonIsaValues[nonIsaValues.length - 1] : 0;
-  const withdrawal39Annual = calculateAnnualWithdrawal(finalIsa, finalNonIsa, extractionRate);
+  const finalNonIsaCostBasis = nonIsaCostBasisValues.length
+    ? nonIsaCostBasisValues[nonIsaCostBasisValues.length - 1]
+    : nonIsaCostBasis;
+  const withdrawal39Annual =
+    finalIsa * (extractionRate / 100) +
+    calculateNonIsaNetWithdrawal(finalNonIsa, finalNonIsaCostBasis, extractionRate);
   const finalMonthlyExpenses = expenseValues.length ? expenseValues[expenseValues.length - 1] : expenses;
   const finalAnnualExpenses = finalMonthlyExpenses * 12;
 
@@ -333,7 +455,7 @@ export const calculateForecast = (input: {
     monthly_savings_values: monthlySavingsValues,
     income,
     expenses,
-    monthly_pension: monthlyPension,
+    monthly_pension: monthlyWorkplacePension + monthlySippNet,
     inflation_rate: inflationRate,
     wage_increase_rate: wageIncreaseRate,
     isa_assets: isaAssets,
@@ -344,19 +466,31 @@ export const calculateForecast = (input: {
     months,
     withdrawal_39_annual: withdrawal39Annual,
     final_isa: finalIsa,
+    final_non_isa: finalNonIsa,
+    final_non_isa_cost_basis: finalNonIsaCostBasis,
+    non_isa_cost_basis_values: nonIsaCostBasisValues,
     years_until_expenses_covered: yearsUntilCovered,
     final_monthly_expenses: finalMonthlyExpenses,
     final_annual_expenses: finalAnnualExpenses,
     expense_values: expenseValues,
     income_values: incomeValues,
+    active_income_pre_tax_values: activeIncomePreTaxValues,
     mortgage_balance_values: mortgageBalanceValues,
     mortgage_payment_values: mortgagePaymentValues,
     home_equity_values: homeEquityValues,
+    workplace_pension_contribution_values: workplacePensionContributionValues,
+    sipp_contribution_values: sippContributionValues,
+    isa_capital_gain_values: isaCapitalGainValues,
+    non_isa_gain_values: nonIsaGainValues,
     home_value: homeValue,
     final_mortgage_balance: currentMortgageBalance,
     final_home_equity: currentHomeEquity,
     monthly_mortgage_payment: monthlyMortgagePayment,
     mortgage_interest_rate: mortgageInterestRate,
+    pensionable_monthly_pay: pensionableMonthlyPay,
+    sipp_type: sippType,
+    sipp_contribution: sippContribution,
+    sipp_rate: sippRate,
     fi_date: fiDate,
     fi_month_index: fiMonthIndex,
     fi_evaluation_end_month: fiEvaluationEndMonth,

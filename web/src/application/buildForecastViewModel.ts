@@ -3,12 +3,17 @@ import { UK_BASELINE_DEFAULTS } from '../domain/ukBaseline';
 import type { ForecastInputs, ForecastResult, ForecastViewModel, TableRow } from '../types/forecast';
 
 const TIMEPOINTS_YEARS = [0, 1, 5, 10, 20];
+const FI_EVALUATION_MONTHS = 40 * 12;
+const UK_CGT_ANNUAL_EXEMPT_AMOUNT = 3000;
+const UK_CGT_BASIC_RATE = 0.18;
 
 const finiteOrZero = (value: number): number => (Number.isFinite(value) ? value : 0);
 
 const currency = (value: number): string => `£${finiteOrZero(value).toLocaleString(undefined, { maximumFractionDigits: 0 })}`;
 const percent = (value: number): string => `${finiteOrZero(value).toFixed(1)}%`;
 const extractionRateLabel = (value: number): string => `${finiteOrZero(value).toFixed(1)}%`;
+const years = (value: number): string => `${finiteOrZero(value).toFixed(1)}y`;
+const ratio = (value: number): string => `${finiteOrZero(value).toFixed(2)}x`;
 
 const safeValue = (values: number[], index: number): number => {
   if (!values.length) return 0;
@@ -44,20 +49,77 @@ const yearEndIndices = (dates: string[]): number[] => {
 };
 
 const sample = (values: number[], indices: number[]): number[] => indices.map((i) => values[i]);
+const calculateNonIsaNetWithdrawal = (nonIsaValue: number, nonIsaCostBasis: number, extractionRatePercent: number): number => {
+  if (nonIsaValue <= 0 || extractionRatePercent <= 0) return 0;
+  const grossWithdrawal = nonIsaValue * (extractionRatePercent / 100);
+  const unrealizedGain = Math.max(0, nonIsaValue - Math.max(0, nonIsaCostBasis));
+  const gainRatio = nonIsaValue > 0 ? unrealizedGain / nonIsaValue : 0;
+  const gainsRealized = grossWithdrawal * gainRatio;
+  const taxableGains = Math.max(0, gainsRealized - UK_CGT_ANNUAL_EXEMPT_AMOUNT);
+  const cgtDue = taxableGains * UK_CGT_BASIC_RATE;
+  return Math.max(0, grossWithdrawal - cgtDue);
+};
 
-const buildFinanceRows = (result: ForecastResult): TableRow[] => {
+const buildFinanceRows = (result: ForecastResult, isaAnnualContribution: number): TableRow[] => {
   const maxMonth = result.income_values.length - 1;
   const fiMonth = result.fi_month_index ?? maxMonth;
+  const monthlyIsaCap = Math.max(0, isaAnnualContribution / 12);
+  const monthlySurplusIsaValues = result.monthly_savings_values.map((value) => Math.max(0, Math.min(value, monthlyIsaCap)));
+  const monthlySurplusNonIsaValues = result.monthly_savings_values.map((value, index) =>
+    Math.max(0, value - monthlySurplusIsaValues[index]),
+  );
   const metrics: [string, number[]][] = [
-    ['Monthly Income', result.income_values],
-    ['Monthly Expenses', result.expense_values],
-    ['Monthly Mortgage Repayments', result.mortgage_payment_values],
-    ['Monthly Savings', result.monthly_savings_values],
+    ['Active Income (Post-Tax)', result.income_values],
+    ['Active Income (Pre-Tax)', result.active_income_pre_tax_values],
+    ['Living Expenses', result.expense_values],
+    ['Mortgage', result.mortgage_payment_values],
+    ['Monthly SIPP Contribution', result.sipp_contribution_values],
+    ['Monthly Workplace Pension Contribution', result.workplace_pension_contribution_values],
+    ['Monthly Capital Gains (ISA)', result.isa_capital_gain_values],
+    ['Monthly Gains (Non-ISA)', result.non_isa_gain_values],
+    ['Monthly Surplus (ISA)', monthlySurplusIsaValues],
+    ['Monthly Surplus (Non-ISA)', monthlySurplusNonIsaValues],
   ];
   return metrics.map(([label, series]) => ({
     label,
     values: [...TIMEPOINTS_YEARS.map((y) => currency(safeValue(series, monthFromYears(y, maxMonth)))), currency(safeValue(series, fiMonth))],
   }));
+};
+
+const buildFiHealthRows = (result: ForecastResult): TableRow[] => {
+  const maxMonth = result.income_values.length - 1;
+  const fiMonth = result.fi_month_index ?? maxMonth;
+  const checkpoints = [...TIMEPOINTS_YEARS, -1];
+
+  const liquidRunwayValues = checkpoints.map((year) => {
+    const monthIndex = year === -1 ? fiMonth : monthFromYears(year, maxMonth);
+    const liquidAssets = safeValue(result.isa_values, monthIndex) + safeValue(result.non_isa_values, monthIndex);
+    const annualSpend =
+      (safeValue(result.expense_values, monthIndex) + safeValue(result.mortgage_payment_values, monthIndex)) * 12;
+    if (annualSpend <= 0) {
+      return liquidAssets > 0 ? 'Infinite' : '0.0y';
+    }
+    return years(liquidAssets / annualSpend);
+  });
+
+  const fiCoverageRatioValues = checkpoints.map((year) => {
+    const monthIndex = year === -1 ? fiMonth : monthFromYears(year, maxMonth);
+    const isaValue = safeValue(result.isa_values, monthIndex);
+    const nonIsaValue = safeValue(result.non_isa_values, monthIndex);
+    const nonIsaCostBasis = safeValue(result.non_isa_cost_basis_values, monthIndex);
+    const annualWithdrawal = isaValue * (result.extraction_rate / 100) + calculateNonIsaNetWithdrawal(nonIsaValue, nonIsaCostBasis, result.extraction_rate);
+    const annualSpend =
+      (safeValue(result.expense_values, monthIndex) + safeValue(result.mortgage_payment_values, monthIndex)) * 12;
+    if (annualSpend <= 0) {
+      return annualWithdrawal > 0 ? 'Infinite' : '0.00x';
+    }
+    return ratio(annualWithdrawal / annualSpend);
+  });
+
+  return [
+    { label: 'Liquid Runway (Years)', values: liquidRunwayValues },
+    { label: 'FI Coverage Ratio', values: fiCoverageRatioValues },
+  ];
 };
 
 const buildNetWorthRows = (result: ForecastResult): TableRow[] => {
@@ -82,11 +144,27 @@ const buildNetWorthRows = (result: ForecastResult): TableRow[] => {
       safeValue(result.home_equity_values, index);
     return currency(total);
   });
-  return [...rows, { label: 'Total Net Worth', values: totalValues, isTotal: true }];
+  const inflationRate = result.inflation_rate / 100;
+  const realNetWorthValues = [...TIMEPOINTS_YEARS, -1].map((year) => {
+    const monthIndex = year === -1 ? fiMonth : monthFromYears(year, maxMonth);
+    const nominalValue =
+      safeValue(result.pension_values, monthIndex) +
+      safeValue(result.isa_values, monthIndex) +
+      safeValue(result.non_isa_values, monthIndex) +
+      safeValue(result.home_equity_values, monthIndex);
+    const inflationFactor = (1 + inflationRate) ** (monthIndex / 12);
+    return currency(inflationFactor > 0 ? nominalValue / inflationFactor : nominalValue);
+  });
+  return [
+    ...rows,
+    { label: 'Total Net Worth', values: totalValues, isTotal: true },
+    { label: "Real Net Worth (Today's £)", values: realNetWorthValues },
+  ];
 };
 
 export const normalizeInputs = (inputs: ForecastInputs): ForecastInputs => ({
   ...inputs,
+  pensionableMonthlyPay: inputs.pensionableMonthlyPay || inputs.income,
   forecastYears: inputs.forecastYears || 40,
   mortgageInterestRate: inputs.mortgageInterestRate || 3.83,
   homeAppreciationRate: inputs.homeAppreciationRate || 3.0,
@@ -99,14 +177,15 @@ export const normalizeInputs = (inputs: ForecastInputs): ForecastInputs => ({
 
 export const buildForecastViewModel = (rawInputs: ForecastInputs): ForecastViewModel => {
   const inputs = normalizeInputs(rawInputs);
-  const result = calculateForecast({
+  const chartMonths = inputs.forecastYears * 12;
+  const chartResult = calculateForecast({
     income: inputs.income,
     expenses: inputs.expenses,
     isaAssets: inputs.isaAssets,
     isaRate: inputs.isaRate,
     nonIsaAssets: inputs.nonIsaAssets,
     nonIsaRate: inputs.nonIsaRate,
-    months: inputs.forecastYears * 12,
+    months: chartMonths,
     homeValue: inputs.homeValue,
     mortgageBalance: inputs.mortgageBalance,
     mortgageTerm: inputs.mortgageTerm,
@@ -119,64 +198,106 @@ export const buildForecastViewModel = (rawInputs: ForecastInputs): ForecastViewM
     pensionRate: inputs.pensionType === 'percentage' ? inputs.pensionContribution : 5.0,
     pensionInterestRate: inputs.pensionInterestRate,
     pensionTaxReliefRate: inputs.pensionTaxReliefRate,
+    pensionableMonthlyPay: inputs.pensionableMonthlyPay,
+    sippContribution: inputs.sippContribution,
     inflationRate: inputs.inflationRate,
     wageIncreaseRate: inputs.wageIncreaseRate,
     isaAnnualContribution: inputs.isaAnnualContribution,
     extractionRate: inputs.extractionRate,
   });
-  const fiIndex = result.fi_month_index ?? Math.max(result.isa_values.length - 1, 0);
-  const fiIsa = safeValue(result.isa_values, fiIndex);
-  const fiNonIsa = safeValue(result.non_isa_values, fiIndex);
-  const fiIncome = safeValue(result.income_values, fiIndex);
-  const fiSavings = safeValue(result.monthly_savings_values, fiIndex);
-  const fiNonIsaTaxFree = Math.min(fiNonIsa, 3000);
-  const fiNonIsaTaxed = Math.max(0, fiNonIsa - 3000);
-  const extractionRate = result.extraction_rate / 100;
-  const fiWithdrawalAnnual = fiIsa * extractionRate + fiNonIsaTaxFree * extractionRate + fiNonIsaTaxed * extractionRate * 0.76;
+  const fiResult = calculateForecast({
+    income: inputs.income,
+    expenses: inputs.expenses,
+    isaAssets: inputs.isaAssets,
+    isaRate: inputs.isaRate,
+    nonIsaAssets: inputs.nonIsaAssets,
+    nonIsaRate: inputs.nonIsaRate,
+    months: FI_EVALUATION_MONTHS,
+    homeValue: inputs.homeValue,
+    mortgageBalance: inputs.mortgageBalance,
+    mortgageTerm: inputs.mortgageTerm,
+    mortgageInterestRate: inputs.mortgageInterestRate,
+    homeAppreciationRate: inputs.homeAppreciationRate,
+    pensionAssets: inputs.pensionAssets,
+    pensionContribution: inputs.pensionContribution,
+    employerPensionContributionRate: inputs.employerPensionContributionRate,
+    pensionType: inputs.pensionType,
+    pensionRate: inputs.pensionType === 'percentage' ? inputs.pensionContribution : 5.0,
+    pensionInterestRate: inputs.pensionInterestRate,
+    pensionTaxReliefRate: inputs.pensionTaxReliefRate,
+    pensionableMonthlyPay: inputs.pensionableMonthlyPay,
+    sippContribution: inputs.sippContribution,
+    inflationRate: inputs.inflationRate,
+    wageIncreaseRate: inputs.wageIncreaseRate,
+    isaAnnualContribution: inputs.isaAnnualContribution,
+    extractionRate: inputs.extractionRate,
+  });
+  const fiIndex = fiResult.fi_month_index ?? Math.max(fiResult.isa_values.length - 1, 0);
+  const fiIsa = safeValue(fiResult.isa_values, fiIndex);
+  const fiNonIsa = safeValue(fiResult.non_isa_values, fiIndex);
+  const fiIncome = safeValue(fiResult.income_values, fiIndex);
+  const fiSavings = safeValue(fiResult.monthly_savings_values, fiIndex);
+  const fiNonIsaCostBasis = safeValue(fiResult.non_isa_cost_basis_values, fiIndex);
+  const extractionRate = fiResult.extraction_rate / 100;
+  const fiWithdrawalAnnual =
+    fiIsa * extractionRate + calculateNonIsaNetWithdrawal(fiNonIsa, fiNonIsaCostBasis, fiResult.extraction_rate);
   const fiSavingsRate = fiIncome > 0 ? (fiSavings / fiIncome) * 100 : 0;
-  const yearsText = result.years_until_expenses_covered === null ? 'Never' : `${result.years_until_expenses_covered.toFixed(1)}`;
+  const yearsText = fiResult.years_until_expenses_covered === null ? 'Never' : `${fiResult.years_until_expenses_covered.toFixed(1)}`;
 
-  const extendedIsa = extendSeriesToYearEnd(result.dates, result.isa_values);
-  const extendedNonIsa = extendSeriesToYearEnd(result.dates, result.non_isa_values);
-  const extendedPension = extendSeriesToYearEnd(result.dates, result.pension_values);
-  const extendedHome = extendSeriesToYearEnd(result.dates, result.home_equity_values);
-  const indices = yearEndIndices(extendedIsa.dates);
+  const extendedIsa = extendSeriesToYearEnd(chartResult.dates, chartResult.isa_values);
+  const extendedNonIsa = extendSeriesToYearEnd(chartResult.dates, chartResult.non_isa_values);
+  const extendedPension = extendSeriesToYearEnd(chartResult.dates, chartResult.pension_values);
+  const extendedHome = extendSeriesToYearEnd(chartResult.dates, chartResult.home_equity_values);
+  const chartLimitIndex = Math.min(chartMonths, Math.max(extendedIsa.dates.length - 1, 0));
+  const chartDates = extendedIsa.dates.slice(0, chartLimitIndex + 1);
+  const indices = yearEndIndices(chartDates);
   const yearlyLabels = indices.map((i) => extendedIsa.dates[i].slice(0, 4));
   const assetSeries = [
     { name: 'ISA Assets', values: sample(extendedIsa.values, indices) },
     { name: 'Non-ISA Assets', values: sample(extendedNonIsa.values, indices) },
-    { name: 'Pension (SIPP)', values: sample(extendedPension.values, indices) },
+    { name: 'Pension', values: sample(extendedPension.values, indices) },
     { name: 'Home Equity', values: sample(extendedHome.values, indices) },
   ];
 
-  const extendedExpenses = extendSeriesToYearEnd(result.dates, result.expense_values);
+  const extendedExpenses = extendSeriesToYearEnd(chartResult.dates, chartResult.expense_values);
+  const extendedMortgagePayments = extendSeriesToYearEnd(chartResult.dates, chartResult.mortgage_payment_values);
   const withdrawalSeries = [
     {
-      name: `${extractionRateLabel(result.extraction_rate)} Annual Withdrawal`,
-      values: sample(extendedIsa.values.map((v) => v * extractionRate), indices),
+      name: `${extractionRateLabel(chartResult.extraction_rate)} Annual Withdrawal`,
+      values: indices.map((index) => {
+        const isaValue = extendedIsa.values[index] ?? 0;
+        const nonIsaValue = extendedNonIsa.values[index] ?? 0;
+        const nonIsaCostBasis = safeValue(chartResult.non_isa_cost_basis_values, index);
+        return isaValue * (chartResult.extraction_rate / 100) + calculateNonIsaNetWithdrawal(nonIsaValue, nonIsaCostBasis, chartResult.extraction_rate);
+      }),
     },
-    { name: 'Annual Expenses (Inflation-Adjusted)', values: sample(extendedExpenses.values.map((v) => v * 12), indices) },
+    {
+      name: 'Annual Expenses (Incl. Mortgage)',
+      values: indices.map((index) => (extendedExpenses.values[index] + extendedMortgagePayments.values[index]) * 12),
+    },
   ];
 
   return {
     kpis: [
-      { label: 'FI Date', value: result.fi_date ?? 'Not reached' },
+      { label: 'Financial Independence (FI) Date', value: fiResult.fi_date ?? 'Not reached' },
       { label: 'Years Until FI', value: yearsText },
-      { label: `Passive Income at FI (${extractionRateLabel(result.extraction_rate)})`, value: currency(fiWithdrawalAnnual) },
+      { label: `Passive Income at FI (${extractionRateLabel(fiResult.extraction_rate)})`, value: currency(fiWithdrawalAnnual) },
       { label: 'Savings Rate at FI', value: percent(fiSavingsRate) },
     ],
     yearlyLabels,
     assetSeries,
     withdrawalSeries,
-    financeRows: buildFinanceRows(result),
-    netWorthRows: buildNetWorthRows(result),
-    raw: result,
+    financeRows: buildFinanceRows(fiResult, inputs.isaAnnualContribution),
+    netWorthRows: buildNetWorthRows(fiResult),
+    fiHealthRows: buildFiHealthRows(fiResult),
+    raw: chartResult,
   };
 };
 
 export const defaultInputs: ForecastInputs = {
   income: UK_BASELINE_DEFAULTS.monthlyIncomeAfterTax,
   expenses: UK_BASELINE_DEFAULTS.monthlyExpensesExMortgage,
+  pensionableMonthlyPay: UK_BASELINE_DEFAULTS.monthlyIncomeAfterTax,
   isaAssets: 0,
   isaRate: 7,
   nonIsaAssets: 0,
@@ -194,6 +315,7 @@ export const defaultInputs: ForecastInputs = {
   employerPensionContributionRate: 3,
   pensionInterestRate: 5,
   pensionTaxReliefRate: 20,
+  sippContribution: 0,
   inflationRate: 2,
   wageIncreaseRate: 3,
   extractionRate: 3.9,
