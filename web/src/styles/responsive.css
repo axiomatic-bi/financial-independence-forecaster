@@ -44,7 +44,7 @@
     height: 100dvh;
     z-index: 50;
     overflow-y: auto;
-    overflow-x: hidden;
+    overflow-x: visible;
     border-bottom: 0;
     background: var(--bg);
     padding-top: calc(var(--space-4) + 40px);
@@ -95,6 +95,15 @@
     min-width: 0;
   }
 
+  .panel .tooltip-wrap {
+    z-index: 1;
+  }
+
+  .panel .tooltip-wrap:hover,
+  .panel .tooltip-wrap:focus-within {
+    z-index: 220;
+  }
+
   table.section-table {
     display: table;
     width: 100%;
@@ -121,45 +130,6 @@
     display: none;
   }
 
-  /* Prevent passive-income tooltip popouts from creating horizontal overflow */
-  table.section-table .tooltip-content--right {
-    left: 50%;
-    right: auto;
-    top: calc(100% + 8px);
-    transform: translateX(-50%);
-    width: min(220px, 80vw);
-  }
-
-  table.section-table--passive {
-    overflow-x: visible;
-    overflow-y: visible;
-  }
-
-  table.section-table--passive .tooltip-wrap {
-    position: relative;
-    z-index: 1;
-  }
-
-  table.section-table--passive .tooltip-wrap:hover,
-  table.section-table--passive .tooltip-wrap:focus-within {
-    z-index: 200;
-  }
-
-  table.section-table--passive .info-icon {
-    position: relative;
-    z-index: 1;
-  }
-
-  table.section-table--passive .tooltip-content,
-  table.section-table--passive .tooltip-content--right {
-    z-index: 201;
-    left: 0;
-    right: auto;
-    top: calc(100% + 8px);
-    transform: none;
-    width: min(280px, calc(100vw - 28px));
-    max-width: calc(100vw - 28px);
-  }
 }
 
 @media (max-width: 1200px) {
