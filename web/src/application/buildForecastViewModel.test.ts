@@ -54,9 +54,15 @@ describe('buildForecastViewModel parity', () => {
   it('matches scalar outputs for baseline fixtures', () => {
     for (const scenario of scenarios) {
       const vm = buildForecastViewModel(mapFixtureInputs(scenario.scenario.inputs));
-      expect(vm.raw.final_wealth).toBeCloseTo(Number(scenario.result_snapshot.scalar_outputs.final_wealth), 0);
-      expect(vm.raw.final_pension).toBeCloseTo(Number(scenario.result_snapshot.scalar_outputs.final_pension), 0);
-      expect(vm.raw.withdrawal_39_annual).toBeCloseTo(
+      expect(vm.raw.final_wealth, `Scenario ${scenario.scenario.name} final_wealth`).toBeCloseTo(
+        Number(scenario.result_snapshot.scalar_outputs.final_wealth),
+        0,
+      );
+      expect(vm.raw.final_pension, `Scenario ${scenario.scenario.name} final_pension`).toBeCloseTo(
+        Number(scenario.result_snapshot.scalar_outputs.final_pension),
+        0,
+      );
+      expect(vm.raw.withdrawal_39_annual, `Scenario ${scenario.scenario.name} withdrawal_39_annual`).toBeCloseTo(
         Number(scenario.result_snapshot.scalar_outputs.withdrawal_39_annual),
         0,
       );
