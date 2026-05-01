@@ -12,7 +12,7 @@ export const chartDescriptions = {
 } as const;
 
 export const incomeFields: { key: keyof ForecastInputs; label: string; step?: number }[] = [
-  { key: 'income', label: 'Monthly Income (After Tax, After Workplace Pension) (£)' },
+  { key: 'income', label: 'Monthly Income (Take Home Pay) (£)' },
   { key: 'expenses', label: 'Monthly Expenses (Excluding Mortgage) (£)' },
 ];
 

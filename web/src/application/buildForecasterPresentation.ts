@@ -107,7 +107,7 @@ export const buildForecasterPresentation = (vm: ForecastViewModel): ForecasterPr
       label: 'Active Income',
       values: formatSeries('Active Income (Post-Tax)'),
       children: [
-        { key: 'active-income-post-tax', label: 'Active Income (Post-Tax)', values: formatSeries('Active Income (Post-Tax)') },
+        { key: 'active-income-post-tax', label: 'Active Income (Take Home)', values: formatSeries('Active Income (Post-Tax)') },
         { key: 'active-income-pre-tax', label: 'Active Income (Pre-Tax)', values: formatSeries('Active Income (Pre-Tax)') },
       ],
     },
