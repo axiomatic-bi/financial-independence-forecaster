@@ -29,6 +29,8 @@
 .card {
   position: relative;
   z-index: 0;
+  display: flex;
+  flex-direction: column;
   background: color-mix(in srgb, var(--surface) 38%, transparent);
   border: 1px solid color-mix(in srgb, var(--text-primary) 18%, transparent);
   border-radius: 12px;
@@ -36,6 +38,7 @@
   backdrop-filter: blur(14px) saturate(125%);
   -webkit-backdrop-filter: blur(14px) saturate(125%);
   box-shadow: none;
+  min-height: 132px;
 }
 
 .card h3 {
@@ -48,9 +51,18 @@
 
 .kpis .card h3 {
   padding-right: 20px;
+  line-height: 1.2;
+  height: calc(2 * 1.2em);
+  overflow: hidden;
 }
 
-.kpi-value { margin: var(--space-1) 0 0; font-size: 2.2rem; font-weight: 500; line-height: 1.1; }
+.kpi-value {
+  margin: var(--space-1) 0 0;
+  margin-top: auto;
+  font-size: 2.2rem;
+  font-weight: 500;
+  line-height: 1.1;
+}
 
 .tooltip-wrap {
   position: relative;
