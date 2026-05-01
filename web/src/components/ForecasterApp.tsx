@@ -209,6 +209,16 @@ export const ForecasterApp = () => {
             <header className="hero">
               <h1>Financial independence forecaster</h1>
               <p>Model your path to financial independence with scenario-based projections</p>
+              <div className="hero-actions">
+                <a
+                  className="button button-secondary"
+                  href="https://github.com/axiomatic-bi/financial-independence-forecaster"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  Contribute on GitHub
+                </a>
+              </div>
             </header>
             <KpiCards vm={presentation.vm} extractionRate={inputs.extractionRate} />
             <PassiveIncomeSection
