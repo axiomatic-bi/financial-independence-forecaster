@@ -4,11 +4,12 @@ import { buildForecastViewModel, defaultInputs } from '../application/buildForec
 import { buildForecasterPresentation } from '../application/buildForecasterPresentation';
 import { AssetsSection } from './forecaster/AssetsSection';
 import { AssumptionsSection } from './forecaster/AssumptionsSection';
+import { formatCompactCurrency } from './forecaster/format';
 import { InputsPanel } from './forecaster/InputsPanel';
 import { KpiCards } from './forecaster/KpiCards';
 import { PassiveIncomeSection } from './forecaster/PassiveIncomeSection';
 import { SavingsSection } from './forecaster/SavingsSection';
-import type { DataColors } from './forecaster/types';
+import type { DataColors, ForecasterPresentation } from './forecaster/types';
 import type { ForecastInputs } from '../types/forecast';
 
 const INPUTS_STORAGE_KEY = 'financial-forecaster:inputs';
@@ -48,6 +49,71 @@ const useDataColors = (): DataColors =>
     }),
     [],
   );
+
+const buildPassiveIncomeAdvice = (presentation: ForecasterPresentation): string[] => {
+  const advice: string[] = [];
+  if (presentation.latestCoverageRatio >= 1) {
+    advice.push(
+      `You are projected to cover expenses by ${presentation.latestCoverageRatio.toFixed(
+        2,
+      )}x in ${presentation.latestIncomeSnapshot.year}; preserving this buffer improves resilience to weaker returns.`,
+    );
+  } else {
+    advice.push(
+      `Your projection is short of full coverage by ${formatCompactCurrency(
+        Math.abs(presentation.latestCoverageGap),
+      )} in ${presentation.latestIncomeSnapshot.year}; closing this gap through higher contributions or lower annual spending is the highest FI lever here.`,
+    );
+  }
+
+  if (!presentation.fiAchievedYear) {
+    advice.push('FI is not reached inside the selected horizon, so extending forecast years or raising surplus can materially change the outcome.');
+  } else {
+    advice.push(`At the current settings, FI is reached in ${presentation.fiAchievedYear}; focus on keeping expenses growth below income growth to bring that date earlier.`);
+  }
+
+  return advice;
+};
+
+const buildAssetsAdvice = (presentation: ForecasterPresentation): string[] => {
+  const advice: string[] = [];
+  const leadingShare = presentation.latestAssetTotal > 0 ? presentation.leadingAsset.value / presentation.latestAssetTotal : 0;
+  advice.push(
+    `${presentation.leadingAsset.label} is your largest projected asset at ${formatCompactCurrency(
+      presentation.leadingAsset.value,
+    )} (${(leadingShare * 100).toFixed(1)}% of total), so changes affecting this bucket are currently the biggest net-worth driver.`,
+  );
+
+  if (presentation.leadingAsset.label.toLowerCase().includes('home')) {
+    advice.push('Home equity is valuable but less flexible for funding FI withdrawals, so accelerating liquid investments can improve FI readiness.');
+  } else {
+    advice.push('Your leading asset is an investment bucket, which supports FI flexibility; keep contributions and risk assumptions aligned with your target timeline.');
+  }
+
+  return advice;
+};
+
+const buildSavingsAdvice = (inputs: ForecastInputs, presentation: ForecasterPresentation): string[] => {
+  const advice: string[] = [];
+  const annualSurplus = presentation.latestMonthlySurplus * 12;
+  const surplusRate = presentation.latestActiveIncomePostTax > 0 ? annualSurplus / presentation.latestActiveIncomePostTax : 0;
+  if (presentation.latestMonthlySurplus <= 0) {
+    advice.push('Current projection shows little or no monthly surplus, so FI timing is being held back mainly by cash-flow constraints.');
+  } else {
+    advice.push(
+      `Your projected surplus is ${formatCompactCurrency(
+        presentation.latestMonthlySurplus,
+      )} per month (about ${(surplusRate * 100).toFixed(1)}% of annual take-home), making surplus retention one of your strongest controllable FI drivers.`,
+    );
+  }
+
+  advice.push(
+    `You currently model ISA contributions at ${formatCompactCurrency(
+      inputs.isaAnnualContribution,
+    )} yearly; reaching this cap consistently before adding non-ISA funds improves tax efficiency on the path to FI.`,
+  );
+  return advice;
+};
 
 export const ForecasterApp = () => {
   const [inputs, setInputs] = useState<ForecastInputs>(() => {
@@ -111,6 +177,9 @@ export const ForecasterApp = () => {
   }
 
   const presentation = buildForecasterPresentation(vmResult.vm);
+  const passiveIncomeAdvice = buildPassiveIncomeAdvice(presentation);
+  const assetsAdvice = buildAssetsAdvice(presentation);
+  const savingsAdvice = buildSavingsAdvice(inputs, presentation);
 
   return (
     <div className="app">
@@ -146,10 +215,12 @@ export const ForecasterApp = () => {
               data={presentation}
               dataColors={dataColors}
               isaAnnualContribution={inputs.isaAnnualContribution}
+              advice={passiveIncomeAdvice}
             />
             <AssetsSection
               data={presentation}
               dataColors={dataColors}
+              advice={assetsAdvice}
               expandedAssetGroups={expandedAssetGroups}
               onToggleAssetGroup={(groupKey) =>
                 setExpandedAssetGroups((prev) => ({
@@ -161,6 +232,7 @@ export const ForecasterApp = () => {
             <SavingsSection
               data={presentation}
               dataColors={dataColors}
+              advice={savingsAdvice}
               expandedSavingsGroups={expandedSavingsGroups}
               onToggleSavingsGroup={(groupKey) =>
                 setExpandedSavingsGroups((prev) => ({

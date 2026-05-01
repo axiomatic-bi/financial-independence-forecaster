@@ -200,6 +200,42 @@
   letter-spacing: 0.01em;
 }
 
+.section-advice {
+  margin-top: var(--space-3);
+  margin-bottom: var(--space-3);
+  padding: var(--space-1) 0 var(--space-1) var(--space-2);
+  border-left: 2px solid var(--data-color-3);
+}
+
+.section-advice-title {
+  margin: 0 0 6px;
+  color: var(--text-primary);
+  font-size: 0.82rem;
+  font-weight: 600;
+}
+
+.section-advice ul {
+  margin: 0;
+  padding-left: 1rem;
+  display: grid;
+  gap: 6px;
+  color: var(--text-secondary);
+  font-size: 0.82rem;
+  line-height: 1.4;
+}
+
+.section-advice--passive {
+  border-left-color: var(--data-color-3);
+}
+
+.section-advice--assets {
+  border-left-color: var(--data-color-3);
+}
+
+.section-advice--savings {
+  border-left-color: var(--data-color-3);
+}
+
 .chart-takeaways strong {
   color: var(--text-primary);
 }
@@ -278,8 +314,6 @@ table {
   border-collapse: separate;
   border-spacing: 0;
   border: none;
-  border-radius: 12px;
-  overflow: hidden;
   table-layout: auto;
   background: transparent;
   backdrop-filter: none;

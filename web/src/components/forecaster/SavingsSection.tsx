@@ -8,11 +8,12 @@ import type { DataColors, ForecasterPresentation } from './types';
 interface SavingsSectionProps {
   data: ForecasterPresentation;
   dataColors: DataColors;
+  advice: string[];
   expandedSavingsGroups: Record<string, boolean>;
   onToggleSavingsGroup: (groupKey: string) => void;
 }
 
-export const SavingsSection = ({ data, dataColors, expandedSavingsGroups, onToggleSavingsGroup }: SavingsSectionProps) => {
+export const SavingsSection = ({ data, dataColors, advice, expandedSavingsGroups, onToggleSavingsGroup }: SavingsSectionProps) => {
   const savingsLegendItems = [
     { label: 'Living Expenses', color: dataColors.livingExpenses },
     { label: 'Mortgage', color: dataColors.mortgage },
@@ -75,6 +76,14 @@ export const SavingsSection = ({ data, dataColors, expandedSavingsGroups, onTogg
               {formatCompactCurrency(data.latestSavingsSnapshot.monthlyPensionContribution)}
             </li>
           </ul>
+          <div className="section-advice section-advice--savings">
+            <p className="section-advice-title">Tip tips</p>
+            <ul>
+              {advice.map((item) => (
+                <li key={item}>{item}</li>
+              ))}
+            </ul>
+          </div>
           <p className="assumption-note">
             <em>
               Assumption: monthly income is modeled as take-home pay; monthly surplus shown here is allocated to ISA first (up to the ISA

@@ -41,6 +41,7 @@ const renderAssetTooltip = ({
 interface AssetsSectionProps {
   data: ForecasterPresentation;
   dataColors: DataColors;
+  advice: string[];
   expandedAssetGroups: Record<string, boolean>;
   onToggleAssetGroup: (groupKey: string) => void;
 }
@@ -52,7 +53,7 @@ const assetTableLabel = (label: string): string => {
   return label;
 };
 
-export const AssetsSection = ({ data, dataColors, expandedAssetGroups, onToggleAssetGroup }: AssetsSectionProps) => (
+export const AssetsSection = ({ data, dataColors, advice, expandedAssetGroups, onToggleAssetGroup }: AssetsSectionProps) => (
   <section className="narrative-chart">
     <h3 className="section-heading">Assets</h3>
     <div className="narrative-copy">
@@ -68,6 +69,14 @@ export const AssetsSection = ({ data, dataColors, expandedAssetGroups, onToggleA
           <strong>Growth from first to final year:</strong> {data.assetGrowthMultiple ? `${data.assetGrowthMultiple.toFixed(1)}x` : 'N/A (starting assets are £0)'}
         </li>
       </ul>
+      <div className="section-advice section-advice--assets">
+        <p className="section-advice-title">Tip tips</p>
+        <ul>
+          {advice.map((item) => (
+            <li key={item}>{item}</li>
+          ))}
+        </ul>
+      </div>
       <p className="assumption-note">
         <em>
           Assumption: ISA, non-ISA, pension, and home values grow using constant annual rates from Inputs (before inflation adjustments

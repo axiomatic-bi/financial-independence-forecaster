@@ -8,9 +8,10 @@ interface PassiveIncomeSectionProps {
   data: ForecasterPresentation;
   dataColors: DataColors;
   isaAnnualContribution: number;
+  advice: string[];
 }
 
-export const PassiveIncomeSection = ({ data, dataColors, isaAnnualContribution }: PassiveIncomeSectionProps) => (
+export const PassiveIncomeSection = ({ data, dataColors, isaAnnualContribution, advice }: PassiveIncomeSectionProps) => (
   <section className="passive-income-section">
     <div className="passive-income-inner narrative-chart">
       <h3 className="section-heading">Passive Income</h3>
@@ -18,7 +19,7 @@ export const PassiveIncomeSection = ({ data, dataColors, isaAnnualContribution }
         <p>{chartDescriptions.passiveIncome}</p>
         <ul className="chart-takeaways">
           <li>
-            <strong>FI achieved year:</strong> {data.fiAchievedText}
+            <strong>Financial Independence (FI) achieved year:</strong> {data.fiAchievedText}
           </li>
           <li>
             <strong>Mortgage paid off year:</strong> {data.mortgagePaidOffText}
@@ -30,6 +31,14 @@ export const PassiveIncomeSection = ({ data, dataColors, isaAnnualContribution }
             <strong>Withdrawal minus total spending in {data.latestIncomeSnapshot.year}:</strong> {formatCompactCurrency(data.latestCoverageGap)}
           </li>
         </ul>
+        <div className="section-advice section-advice--passive">
+          <p className="section-advice-title">Tip tips</p>
+          <ul>
+            {advice.map((item) => (
+              <li key={item}>{item}</li>
+            ))}
+          </ul>
+        </div>
         <p className="assumption-note">
           <em>
             Assumption: monthly surplus is directed to tax-efficient ISA contributions first, up to your selected annual ISA
