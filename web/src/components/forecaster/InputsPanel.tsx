@@ -1,5 +1,3 @@
-import type { FocusEvent } from 'react';
-
 import {
   advancedAssumptionsFields,
   currentAssetsFields,
@@ -10,6 +8,7 @@ import {
   propertyFields,
   sippFields,
 } from './constants';
+import { NumericInput } from './NumericInput';
 import type { InputsPanelProps } from './types';
 import type { ForecastInputs } from '../../types/forecast';
 
@@ -36,29 +35,25 @@ const NumberInputField = ({
   label,
   step,
   value,
-  onFocus,
   onInputsChange,
 }: {
   inputKey: keyof ForecastInputs;
   label: string;
   step?: number;
   value: number;
-  onFocus: (event: FocusEvent<HTMLInputElement>) => void;
   onInputsChange: InputsPanelProps['onInputsChange'];
 }) => (
   <div className="field">
     {renderInputLabel(inputKey, label)}
-    <input
+    <NumericInput
       id={inputId(inputKey)}
       name={inputId(inputKey)}
-      type="number"
       step={step ?? 1}
       value={value}
-      onFocus={onFocus}
-      onChange={(event) =>
+      onChange={(val) =>
         onInputsChange((prev) => ({
           ...prev,
-          [inputKey]: Number(event.target.value),
+          [inputKey]: val,
         }))
       }
     />
@@ -66,12 +61,6 @@ const NumberInputField = ({
 );
 
 export const InputsPanel = ({ inputs, elapsedMs, isOpen, onInputsChange, onCloseMobilePanel, onResetInputs }: InputsPanelProps) => {
-  const handleNumberFocus = (event: FocusEvent<HTMLInputElement>) => {
-    if (Number(event.target.value) === 0) {
-      event.target.select();
-    }
-  };
-
   return (
     <aside id="inputs-panel" className={`panel${isOpen ? ' is-open' : ''}`}>
       <section className="tour-input-section" data-tour-target="inputs-main-section">
@@ -120,7 +109,6 @@ export const InputsPanel = ({ inputs, elapsedMs, isOpen, onInputsChange, onClose
               label={label}
               step={step}
               value={inputs[key] as number}
-              onFocus={handleNumberFocus}
               onInputsChange={onInputsChange}
             />
           ))}
@@ -136,7 +124,6 @@ export const InputsPanel = ({ inputs, elapsedMs, isOpen, onInputsChange, onClose
             label={label}
             step={step}
             value={inputs[key] as number}
-            onFocus={handleNumberFocus}
             onInputsChange={onInputsChange}
           />
         ))}
@@ -150,7 +137,6 @@ export const InputsPanel = ({ inputs, elapsedMs, isOpen, onInputsChange, onClose
           label={label}
           step={step}
           value={inputs[key] as number}
-          onFocus={handleNumberFocus}
           onInputsChange={onInputsChange}
         />
       ))}
@@ -189,7 +175,6 @@ export const InputsPanel = ({ inputs, elapsedMs, isOpen, onInputsChange, onClose
               label={label}
               step={step}
               value={inputs[key] as number}
-              onFocus={handleNumberFocus}
               onInputsChange={onInputsChange}
             />
           ))}
@@ -218,7 +203,6 @@ export const InputsPanel = ({ inputs, elapsedMs, isOpen, onInputsChange, onClose
               label={label}
               step={step}
               value={inputs[key] as number}
-              onFocus={handleNumberFocus}
               onInputsChange={onInputsChange}
             />
           ))}
@@ -243,7 +227,6 @@ export const InputsPanel = ({ inputs, elapsedMs, isOpen, onInputsChange, onClose
               label={label}
               step={step}
               value={inputs[key] as number}
-              onFocus={handleNumberFocus}
               onInputsChange={onInputsChange}
             />
           ))}
@@ -258,7 +241,6 @@ export const InputsPanel = ({ inputs, elapsedMs, isOpen, onInputsChange, onClose
               label={label}
               step={step}
               value={inputs[key] as number}
-              onFocus={handleNumberFocus}
               onInputsChange={onInputsChange}
             />
           ))}
