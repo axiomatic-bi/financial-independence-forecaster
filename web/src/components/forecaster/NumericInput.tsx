@@ -1,4 +1,4 @@
-import React, { useState, useRef, useCallback, useEffect, type FocusEvent, type ChangeEvent, type KeyboardEvent } from 'react';
+import React, { useState, useRef, useEffect, type ChangeEvent, type KeyboardEvent, type MouseEvent } from 'react';
 
 interface NumericInputProps {
   id: string;
@@ -9,59 +9,63 @@ interface NumericInputProps {
 }
 
 /**
- * Controlled numeric input using type="text" with inputMode="decimal".
+ * Numeric input that avoids the controlled type="number" quirk where
+ * backspacing to empty immediately snaps back to "0". Uses type="text"
+ * with inputMode="decimal" (standard practice for financial inputs).
  *
- * Avoids native type="number" pitfalls (leading zeros, spinners, scroll-to-change).
- * Selects all text on focus so typing immediately overwrites the current value.
- * Commits the parsed number on blur or Enter; reverts to the last valid value
- * if the string is empty or unparseable.
+ * - Select-all on focus so typing overwrites the current value
+ * - While editing: any valid numeric string (including empty) is allowed
+ * - On blur: empty/invalid → commits 0 and displays "0"
  */
 export const NumericInput = ({ id, name, value, step, onChange }: NumericInputProps) => {
-  const [displayValue, setDisplayValue] = useState(String(value));
-  const [isFocused, setIsFocused] = useState(false);
+  const [draft, setDraft] = useState(String(value));
+  const [editing, setEditing] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
+  const focusingRef = useRef(false);
 
   useEffect(() => {
-    if (!isFocused) {
-      setDisplayValue(String(value));
+    if (!editing) {
+      setDraft(String(value));
     }
-  }, [value, isFocused]);
+  }, [value, editing]);
 
-  const commit = useCallback(() => {
-    const trimmed = displayValue.trim();
-    if (trimmed === '' || trimmed === '-') {
-      setDisplayValue(String(value));
-      return;
-    }
-    const parsed = Number(trimmed);
-    if (Number.isFinite(parsed)) {
-      onChange(parsed);
-      setDisplayValue(String(parsed));
-    } else {
-      setDisplayValue(String(value));
-    }
-  }, [displayValue, value, onChange]);
+  const selectAll = () => {
+    const el = inputRef.current;
+    if (el) el.setSelectionRange(0, el.value.length);
+  };
 
-  const handleFocus = (event: FocusEvent<HTMLInputElement>) => {
-    setIsFocused(true);
-    requestAnimationFrame(() => event.target.select());
+  const handleFocus = () => {
+    setEditing(true);
+    focusingRef.current = true;
+    selectAll();
+  };
+
+  const handleMouseUp = (e: MouseEvent<HTMLInputElement>) => {
+    if (focusingRef.current) {
+      focusingRef.current = false;
+      e.preventDefault();
+      selectAll();
+    }
   };
 
   const handleBlur = () => {
-    setIsFocused(false);
-    commit();
+    setEditing(false);
+    focusingRef.current = false;
+    const parsed = Number(draft);
+    const final = Number.isFinite(parsed) && draft.trim() !== '' ? parsed : 0;
+    onChange(final);
+    setDraft(String(final));
   };
 
-  const handleChange = (event: ChangeEvent<HTMLInputElement>) => {
-    const raw = event.target.value;
+  const handleChange = (e: ChangeEvent<HTMLInputElement>) => {
+    const raw = e.target.value;
     if (raw === '' || raw === '-' || /^-?\d*\.?\d*$/.test(raw)) {
-      setDisplayValue(raw);
+      setDraft(raw);
     }
   };
 
-  const handleKeyDown = (event: KeyboardEvent<HTMLInputElement>) => {
-    if (event.key === 'Enter') {
-      commit();
+  const handleKeyDown = (e: KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Enter') {
       inputRef.current?.blur();
     }
   };
@@ -75,8 +79,9 @@ export const NumericInput = ({ id, name, value, step, onChange }: NumericInputPr
       inputMode="decimal"
       step={step}
       autoComplete="off"
-      value={displayValue}
+      value={draft}
       onFocus={handleFocus}
+      onMouseUp={handleMouseUp}
       onBlur={handleBlur}
       onChange={handleChange}
       onKeyDown={handleKeyDown}
